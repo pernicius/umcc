@@ -14,9 +14,8 @@ project "umcc"
 	pchsource "source/pch.cpp"
 
 	-- Libraries
---	LibCommon{}
---	LibHeliosEngine{}
---	LibNet{}
+	VendorCxxopts{}
+	VendorColoredCout{}
 
 
 	includedirs {

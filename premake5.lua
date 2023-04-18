@@ -52,11 +52,11 @@ workspace "Universal Microcode Compiler"
 
 	filter {}
 
-	-------------------------------
-	-- [ LIBRARIES (UTIL-FUNC) ] --
-	-------------------------------
+	--------------------------------
+	-- [ LIBRARIES (vendor/...) ] --
+	--------------------------------
 	
---	include("premake5-libs.lua")
+	include("premake5-vendor.lua")
 
 	-------------------------------
 	-- [ PROJECT CONFIGURATION ] --
@@ -67,5 +67,9 @@ workspace "Universal Microcode Compiler"
 	dir_config  = "%{string.lower(cfg.platform)}-%{string.lower(cfg.buildcfg)}/"
 	dir_project = "%{string.lower(prj.name)}"
 
-	dir_group = ""
+	dir_group = "projects/"
 	include("projects/")
+
+	group "Vendor"
+		dir_group = "vendor/"
+		include("vendor/")

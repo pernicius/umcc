@@ -4,3 +4,5 @@
 [submodule "vendor/colored-cout"]
 	path = vendor/colored-cout
 	url = https://github.com/yurablok/colored-cout.git
+# uncomment if changes in this submodule needs to be shown
+#	ignore = dirty
