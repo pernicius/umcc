@@ -1,0 +1,6 @@
+[submodule "vendor/cxxopts"]
+	path = vendor/cxxopts
+	url = https://github.com/jarro2783/cxxopts.git
+[submodule "vendor/colored-cout"]
+	path = vendor/colored-cout
+	url = https://github.com/yurablok/colored-cout.git
