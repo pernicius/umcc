@@ -1,6 +1,7 @@
 #include "pch.h"
 
 #include "FileReader.h"
+#include "data_srclines.h"
 
 #include <filesystem>
 
@@ -37,11 +38,15 @@ namespace Parser {
 			return false;
 		}
 
+		// store file data
+		data_srcfiles sf;
+		sf.name = corrfilename;
+		g_data_srcfiles.push_back(sf);
+		m_file_idx = g_data_srcfiles.size() - 1;
+
 		// init buffer and pointer
-		std::getline(m_file, m_line);
-// TODO: error handling
-		m_linepos = 0;
-		m_linecount = 1;
+		if (!ReadLine())
+			return false;
 
 		return true;
 	}
@@ -111,10 +116,7 @@ namespace Parser {
 		if ((m_line.length() == 0) or (m_linepos >= m_line.length()))
 		{
 //			std::cout << "Parser::FileReader::Consume -> getline()" << std::endl;
-			std::getline(m_file, m_line);
-// TODO: error handling
-			m_linecount++;
-			m_linepos = 0;
+			ReadLine();
 			if (c != nullptr)
 				*c = '\n';
 			return true;
@@ -131,6 +133,25 @@ namespace Parser {
 	short FileReader::GetPos()
 	{
 		return m_linepos;
+	}
+
+
+	bool FileReader::ReadLine()
+	{
+		std::getline(m_file, m_line);
+		// TODO: error handling
+
+		m_linepos = 0;
+		m_linecount++;
+
+		// store line
+		data_srclines sl;
+		sl.file_idx = m_file_idx;
+		sl.line_number = m_linecount;
+		sl.line = m_line;
+		g_data_srclines.push_back(sl);
+
+		return true;
 	}
 
 

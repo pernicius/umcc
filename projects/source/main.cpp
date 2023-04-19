@@ -1,9 +1,5 @@
 #include "pch.h"
 
-#include "global_data.h"
-std::vector<SrcFiles> g_vSrcFiles;
-std::vector<SrcLines> g_vSrcLines;
-
 #include "Parser/Lexer.h"
 
 

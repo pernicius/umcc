@@ -40,9 +40,12 @@ namespace Parser {
 
 	private:
 
+		bool ReadLine();
+
 		// internal file-name and file-stream
 		const std::string& m_filename;
 		std::ifstream m_file;
+		short m_file_idx;
 
 		// internal buffer and pointer
 		std::string m_line;
