@@ -41,7 +41,8 @@ project "umcc"
 
 	filter "configurations:Release"
 
-		kind "WindowedApp"
+		kind "ConsoleApp"
+--		kind "WindowedApp"
 
 		defines {
 		}
