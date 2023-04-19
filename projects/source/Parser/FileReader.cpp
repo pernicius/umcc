@@ -10,29 +10,27 @@ namespace Parser {
 	FileReader::FileReader(const std::string& filename)
 		: m_filename(filename)
 	{
-		std::cout << "Parser::FileReader::FileReader()" << std::endl;
+//		std::cout << "Parser::FileReader::FileReader()" << std::endl;
 	}
 
 
 	FileReader::~FileReader()
 	{
-		std::cout << "Parser::FileReader::~FileReader()" << std::endl;
+//		std::cout << "Parser::FileReader::~FileReader()" << std::endl;
 	}
 
 
 	bool FileReader::Init()
 	{
-		std::cout << "Parser::FileReader::Init()" << std::endl;
+//		std::cout << "Parser::FileReader::Init()" << std::endl;
 
 		// reformat filename
 		std::string corrfilename = std::filesystem::path(m_filename).remove_filename().generic_string()
 		                         + std::filesystem::path(m_filename).filename().generic_string();
-		std::cout << "File (internal): \"" << corrfilename << "\"" << std::endl;
-		std::cout << "File: \"" << m_filename << "\"" << std::endl;
+//		std::cout << "File (internal): \"" << corrfilename << "\"" << std::endl;
 
 		// open requested file
 		m_file.open(corrfilename, std::ifstream::in);
-		std::cout << "Exists: " << m_file.is_open() << std::endl;
 		if (!m_file.is_open())
 		{
 			std::cout << "ERROR: can't open file" << std::endl;
@@ -112,7 +110,7 @@ namespace Parser {
 
 		if ((m_line.length() == 0) or (m_linepos >= m_line.length()))
 		{
-			std::cout << "Parser::FileReader::Consume -> getline()" << std::endl;
+//			std::cout << "Parser::FileReader::Consume -> getline()" << std::endl;
 			std::getline(m_file, m_line);
 // TODO: error handling
 			m_linecount++;

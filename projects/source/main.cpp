@@ -1,7 +1,5 @@
 #include "pch.h"
 
-#include <iostream>
-
 #include "global_data.h"
 std::vector<SrcFiles> g_vSrcFiles;
 std::vector<SrcLines> g_vSrcLines;
@@ -11,14 +9,12 @@ std::vector<SrcLines> g_vSrcLines;
 
 int main()
 {
-	std::cout << "main()\n";
-
 	bool result;
 
 	std::string startfile = "..\\ucode_test\\main.ucode";
 
-	Parser::Lexer lex(startfile);
-	result = lex.GenerateTokens();
+	Parser::Lexer lex;
+	result = lex.GenerateTokens(startfile);
 
 	return 0;
 }

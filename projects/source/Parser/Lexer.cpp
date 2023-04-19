@@ -2,53 +2,69 @@
 
 #include "Lexer.h"
 
+#include <filesystem>
+
 namespace Parser {
 
 
-	Lexer::Lexer(const std::string& filename)
-		: m_filename(filename)
+	Lexer::Lexer()
+		: m_reader(nullptr)
 	{
-		std::cout << "Parser::Lexer::Lexer()" << std::endl;
-
-		m_reader = nullptr;
+//		std::cout << "Parser::Lexer::Lexer()" << std::endl;
 	}
 
 
 	Lexer::~Lexer()
 	{
-		std::cout << "Parser::Lexer::~Lexer()" << std::endl;
+//		std::cout << "Parser::Lexer::~Lexer()" << std::endl;
 
 		if (m_reader)
 			delete m_reader;
 	}
 
 
-	bool Lexer::GenerateTokens()
+	bool Lexer::GenerateTokens(const std::string& filename)
     {
-		std::cout << "Parser::Lexer::GenerateTokens()" << std::endl;
+//		std::cout << "Parser::Lexer::GenerateTokens()" << std::endl;
 
 		// initialize the file reader
-		m_reader = new FileReader(m_filename);
+		m_reader = new FileReader(filename);
 		if (!m_reader->Init())
 			return false;
 
 		// loop until end-of-file
+		char c, c2;
 		do
 		{
 			// skip leading spaces
 			SkipWhitespaces(true);
 
 			// get the first char of a token
-			char c;
 			if (!m_reader->Consume(&c))
 				return false;
+			// TODO...
+
+			// single-line comments
+			if (c == '/')
+			{
+				if (m_reader->Peek(&c2))
+				{
+					if (c2 == '/')
+					{
+						SkipRestofLine();
+
+						// continue parsing
+						continue;
+					}
+				}
+			}
+
+			// multi-line comments
 			// TODO...
 
 			// PREPROCESSOR COMMAND
 			if (c == '#')
 			{
-				std::cout << "Lexer -> PreProcCmd begin" << std::endl;
-
 				// get the command
 				std::string cmd;
 				if (!ScanSymbol(cmd))
@@ -57,12 +73,10 @@ namespace Parser {
 					return false;
 				}
 
-				std::cout << "Lexer -> PreProcCmd: #" << cmd << std::endl;
-
 				// #include ...
 				if (cmd.compare("include") == 0)
 				{
-					std::cout << "Lexer -> Preprocessor: #include statement" << std::endl;
+//					std::cout << "Lexer -> found #include statement" << std::endl;
 
 					// at least a single white char
 					if (!SkipWhitespaces())
@@ -82,13 +96,13 @@ namespace Parser {
 					}
 
 					// get the filename
-					std::string filename;
-					if (!ScanString(c, filename))
+					std::string includefile;
+					if (!ScanString(c, includefile))
 					{
 						std::cout << "ERROR: ScanString() returns false" << std::endl;
 						return false;
 					}
-					std::cout << "Lexer -> Preprocessor: #include file: \"" << filename << "\"" << std::endl;
+					std::cout << "Lexer -> found #include command for file: \"" << includefile << "\"" << std::endl;
 
 					// next line
 					if (!SkipRestofLine())
@@ -96,8 +110,16 @@ namespace Parser {
 					// TODO...
 
 					// include file
-					std::cout << "Lexer -> Preprocessor: including file: \"" << filename << "\"" << std::endl;
-					// TODO...
+					includefile = std::filesystem::path(filename).remove_filename().generic_string() + includefile;
+					std::cout << "Lexer -> including file: \"" << includefile << "\"" << std::endl;
+
+					FileReader* pOldReader = m_reader;
+					bool subresult = GenerateTokens(includefile);
+					if (m_reader)
+						delete m_reader;
+					m_reader = pOldReader;
+					if (!subresult)
+						return false;
 
 					// continue parsing
 					continue;
@@ -108,26 +130,34 @@ namespace Parser {
 				return false;
 			}
 
-			// unexpected char
-			// TODO...
-			return false;
-
 			// SECTION
 			if (c == '.')
 			{
-				std::cout << "SECTION: ." << std::endl;
-
-				std::string buf;
-				if (!ScanSymbol(buf))
+				std::string section;
+				if (!ScanSymbol(section))
 				{
 					std::cout << "ERROR: ScanSymbol() returns false" << std::endl;
 					return false;
 				}
 
-				continue;
+				std::cout << "Lexer -> found section: ." << section << std::endl;
+
+				// continue parsing
+				//continue;
+std::cout << "DEBUG-STOP" << std::endl;
+return false;
 			}
 
+			// unexpected char
+			std::cout << "ERROR: unexpected character" << std::endl;
+			return false;
+
 		} while (m_reader->Peek());
+
+		// cleanup
+		if (m_reader)
+			delete m_reader;
+		m_reader = nullptr;
 
         return true;
     }
@@ -135,7 +165,7 @@ namespace Parser {
 
 	bool Lexer::SkipWhitespaces(bool skip_newline)
 	{
-		std::cout << "Parser::Lexer::SkipWhitespaces()" << std::endl;
+//		std::cout << "Parser::Lexer::SkipWhitespaces()" << std::endl;
 
 		char c;
 		while (m_reader->Peek(&c))
@@ -164,7 +194,7 @@ namespace Parser {
 
 	bool Lexer::SkipRestofLine()
 	{
-		std::cout << "Parser::Lexer::SkipRestofLine()" << std::endl;
+//		std::cout << "Parser::Lexer::SkipRestofLine()" << std::endl;
 
 		char c;
 		while (m_reader->Consume(&c))
@@ -179,7 +209,7 @@ namespace Parser {
 
 	bool Lexer::ScanSymbol(std::string& result)
 	{
-		std::cout << "Parser::Lexer::ScanSymbol()" << std::endl;
+//		std::cout << "Parser::Lexer::ScanSymbol()" << std::endl;
 		char c;
 
 		// symbols must start with an alpha char or underscore
@@ -207,7 +237,7 @@ namespace Parser {
 
 	bool Lexer::ScanString(char delim, std::string& result)
 	{
-		std::cout << "Parser::Lexer::ScanString()" << std::endl;
+//		std::cout << "Parser::Lexer::ScanString()" << std::endl;
 		char c;
 
 		while (m_reader->Peek(&c))

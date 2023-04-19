@@ -33,13 +33,12 @@ namespace Parser {
 	{
 	public:
 
-		Lexer() = delete;
-		Lexer(const std::string& filename);
+		Lexer();
 		~Lexer();
 
 	public:
 
-		bool GenerateTokens();
+		bool GenerateTokens(const std::string& filename);
 
 //		bool Peek();
 //		bool Consume();
@@ -60,7 +59,6 @@ namespace Parser {
 
 	private:
 
-		const std::string& m_filename;
 		FileReader* m_reader;
 
 		std::vector<token_data> m_tokens;
