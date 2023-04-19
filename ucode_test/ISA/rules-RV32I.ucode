@@ -1,0 +1,14 @@
+// Section definition
+//  - each rule is in it's own section
+//  - all unspecified .INPUTS are ignored
+//  - all unspecified .OUTPUTS get their default value (0 if not defined)
+//
+//  .RULE { (<input_filter>), (output_setting) }
+//
+//    <input_filter>   = <input_name>=<value>, ...
+//    <output_setting> = <output_name>=<value>, ...
+//    <input_name>     can be an actual .INPUT(S) or a .SIGNAL(S)
+//    <value>          can be a number or a .CONSTANT(S)
+
+// LUI
+.RULE { (opcode=0b01101), (Imm_ctrl=U_type, Imm_mux=IMM, rd_en) }

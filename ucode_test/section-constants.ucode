@@ -1,0 +1,22 @@
+// Section definition
+//  - Can occur multiple times
+.CONSTANTS {
+	// <name>: <number>;
+	// 0b prefix for binary numbers
+	// 0x prefix for hexadecimal numbers
+	// no prefix for decimal numbers
+
+	// Imm_ctrl
+	R_type: 0b000;
+	I_type: 0b001;
+	S_type: 0b010;
+	B_type: 0b011;
+	U_type: 0b100;
+	J_type: 0b101;
+	//      0b110 is unused
+	//      0b111 is unused
+
+	// Imm_mux
+	IMM: 1;
+	RS2: 0;
+}

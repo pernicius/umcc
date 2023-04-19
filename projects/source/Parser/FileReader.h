@@ -1,47 +1,53 @@
 #pragma once
 
-#include "CharReader.h"
+#include <string>
+#include <fstream>
 
 namespace Parser {
 
 
-	class FileReader : public CharReaderInterface
+	class FileReader
 	{
 	public:
 
-		/// No default constructor.
 		FileReader() = delete;
-
-		/// Init the file reader.
 		FileReader(const std::string& filename);
-
 		~FileReader();
 
 	public:
 
-		bool Init() override;
+		bool Init();
 
 		/**
 		 * Get character at position (current + index).
+		 * Position must be on the same line!
 		 *
 		 * \param c [out] Pointer to a character buffer (if set to nullptr no character will be returned).
 		 * \param index [in] Index of character to return.
 		 * \return Returns true on success or false if no character can be returned.
 		 */
-		bool Peek(char* c = nullptr, short index = 0) override;
+		bool Peek(char* c = nullptr, short index = 0);
 
 		/**
-		 * Get character at position (current + index) and update current position.
+		 * Extract character at current position and update current position.
 		 *
 		 * \param c [out] Pointer to a character buffer (if set to nullptr no character will be returned).
-		 * \param index [in] Index of character to return.
 		 * \return Returns true on success or false if no character can be returned.
 		 */
-		bool Consume(char* c = nullptr, short index = 0) override;
+		bool Consume(char* c = nullptr);
+
+		short GetPos();
 
 	private:
 
-		std::string m_filename;
+		// internal file-name and file-stream
+		const std::string& m_filename;
+		std::ifstream m_file;
+
+		// internal buffer and pointer
+		std::string m_line;
+		short m_linepos = 0;
+		short m_linecount = 0;
 
 	}; // class FileReader
 
