@@ -1,10 +1,14 @@
 #include "pch.h"
 
 #include "Lexer.h"
+#include "data_tokens.h"
 
 #include <filesystem>
 
 namespace Parser {
+
+
+	std::vector<token_data> v_data_tokens;
 
 
 	Lexer::Lexer()
@@ -34,21 +38,22 @@ namespace Parser {
 
 		// loop until end-of-file
 		char c, c2;
+		short p_coll, p_line;
 		do
 		{
 			// skip leading spaces
 			SkipWhitespaces(true);
 
-			// get the first char of a token
-			if (!m_reader->Consume(&c))
-				return false;
-			// TODO...
+			// get the first char of a token (if any)
+			m_reader->GetPos(p_coll, p_line);
+			if (!m_reader->Peek(&c))
+				return true;
 
-			// single-line comments
 			if (c == '/')
 			{
-				if (m_reader->Peek(&c2))
+				if (m_reader->Peek(&c2, 1))
 				{
+					// single-line comments
 					if (c2 == '/')
 					{
 						SkipRestofLine();
@@ -56,15 +61,17 @@ namespace Parser {
 						// continue parsing
 						continue;
 					}
+
+					// multi-line comments
+					// TODO...
 				}
 			}
-
-			// multi-line comments
-			// TODO...
 
 			// PREPROCESSOR COMMAND
 			if (c == '#')
 			{
+				m_reader->Consume();
+
 				// get the command
 				std::string cmd;
 				if (!ScanSymbol(cmd))
@@ -104,11 +111,6 @@ namespace Parser {
 					}
 					std::cout << "Lexer -> found #include command for file: \"" << includefile << "\"" << std::endl;
 
-					// next line
-					if (!SkipRestofLine())
-						return false;
-					// TODO...
-
 					// include file
 					includefile = std::filesystem::path(filename).remove_filename().generic_string() + includefile;
 					std::cout << "Lexer -> including file: \"" << includefile << "\"" << std::endl;
@@ -121,6 +123,11 @@ namespace Parser {
 					if (!subresult)
 						return false;
 
+					// next line
+					if (!SkipRestofLine())
+						return false;
+					// TODO...
+
 					// continue parsing
 					continue;
 				}
@@ -130,9 +137,12 @@ namespace Parser {
 				return false;
 			}
 
-			// SECTION
+			// TOKEN_SECTION
 			if (c == '.')
 			{
+				m_reader->Consume();
+
+				// get section id
 				std::string section;
 				if (!ScanSymbol(section))
 				{
@@ -140,18 +150,119 @@ namespace Parser {
 					return false;
 				}
 
-				std::cout << "Lexer -> found section: ." << section << std::endl;
+				std::cout << "Lexer -> found TOKEN_SECTION(\"." << section << "\")" << std::endl;
 
-				
+				// store token
+				token_data td;
+				td.type = TOKEN_SECTION;
+				td.value = section;
+				td.line_idx = p_line;
+				td.pos_start = p_coll;
+				td.pos_len = (short)section.length() + 1;
+				v_data_tokens.push_back(td);
 
 				// continue parsing
-				//continue;
-std::cout << "DEBUG-STOP" << std::endl;
-return false;
+				continue;
+			}
+
+			// TOKEN_NUMBER
+			if ((c >= '0') and (c <= '9'))
+			{
+				std::string buf;
+				ScanNumber(buf);
+
+				std::cout << "Lexer -> found TOKEN_NUMBER(\"" << buf << "\")" << std::endl;
+
+				// store token
+				token_data td;
+				td.type = TOKEN_NUMBER;
+				td.value = buf;
+				td.line_idx = p_line;
+				td.pos_start = p_coll;
+				td.pos_len = (short)buf.length();
+				v_data_tokens.push_back(td);
+
+				// continue parsing
+				continue;
+			}
+
+			// TOKEN_SYMBOL
+			if ((c == '_') or ((c >= 'a') and (c <= 'z')) or ((c >= 'A') and (c <= 'Z')))
+			{
+				// get symbol
+				std::string symbol;
+				if (!ScanSymbol(symbol))
+				{
+					std::cout << "ERROR: ScanSymbol() returns false" << std::endl;
+					return false;
+				}
+
+				std::cout << "Lexer -> found TOKEN_SYMBOL(\"" << symbol << "\")" << std::endl;
+
+				// store token
+				token_data td;
+				td.type = TOKEN_SYMBOL;
+				td.value = symbol;
+				td.line_idx = p_line;
+				td.pos_start = p_coll;
+				td.pos_len = (short)symbol.length() + 1;
+				v_data_tokens.push_back(td);
+
+				// continue parsing
+				continue;
+			}
+
+			// TOKEN_STRING
+			// TODO...
+
+			// single char tokens
+			if ((c == '=') or (c == ':') or (c == ';') or (c == ',') or (c == '{') or (c == '}') or (c == '(') or (c == ')') or (c == '[') or (c == ']'))
+			{
+				token_type t;
+
+				if (c == '=')
+				{
+					std::cout << "Lexer -> found TOKEN_EQUAL(\"" << c << "\")" << std::endl;
+					t = TOKEN_EQUAL;
+				}
+				if (c == ':')
+				{
+					std::cout << "Lexer -> found TOKEN_COLON(\"" << c << "\")" << std::endl;
+					t = TOKEN_COLON;
+				}
+				if (c == ';')
+				{
+					std::cout << "Lexer -> found TOKEN_SEMI(\"" << c << "\")" << std::endl;
+					t = TOKEN_SEMI;
+				}
+				if (c == ',')
+				{
+					std::cout << "Lexer -> found TOKEN_COMMA(\"" << c << "\")" << std::endl;
+					t = TOKEN_COMMA;
+				}
+				if ((c == '{') or (c == '}') or (c == '(') or (c == ')') or (c == '[') or (c == ']'))
+				{
+					std::cout << "Lexer -> found TOKEN_PAREN(\"" << c << "\")" << std::endl;
+					t = TOKEN_PAREN;
+				}
+
+				m_reader->Consume();
+
+				// store token
+				token_data td;
+				td.type = t;
+				td.value = c;
+				td.line_idx = p_line;
+				td.pos_start = p_coll;
+				td.pos_len = 1;
+				v_data_tokens.push_back(td);
+
+				// continue parsing
+				continue;
 			}
 
 			// unexpected char
-			std::cout << "ERROR: unexpected character" << std::endl;
+			std::cout << "ERROR: unexpected character '" << c << "'" << std::endl;
 			return false;
 
 		} while (m_reader->Peek());
@@ -213,6 +324,7 @@ return false;
 	{
 //		std::cout << "Parser::Lexer::ScanSymbol()" << std::endl;
 		char c;
+		result = "";
 
 		// symbols must start with an alpha char or underscore
 		if (!m_reader->Peek(&c))
@@ -237,10 +349,76 @@ return false;
 	}
 
 
+	void Lexer::ScanNumber(std::string& result)
+	{
+		bool is_bin = false;
+		bool is_hex = false;
+		char c;
+		result = "";
+
+		// number must start with an numeric char
+		if (!m_reader->Peek(&c))
+			return;
+		if (!(c >= '0' and c <= '9'))
+			return;
+		if (!m_reader->Consume(&c))
+			return;
+		result = c;
+
+		while (m_reader->Peek(&c))
+		{
+			// check type of number
+			if ((result.length() == 1) and (result[0] == '0'))
+			{
+				// binary number
+				if (c == 'b')
+				{
+					result += c;
+					is_bin = true;
+					m_reader->Consume();
+					continue;
+				}
+				// haxadecimal number
+				if (c == 'x')
+				{
+					result += c;
+					is_hex = true;
+					m_reader->Consume();
+					continue;
+				}
+			}
+
+			if ((c >= '0') and (c <= '1'))
+			{
+				result += c;
+				m_reader->Consume();
+				continue;
+			}
+
+			if (!is_bin and (c >= '2') and (c <= '9'))
+			{
+				result += c;
+				m_reader->Consume();
+				continue;
+			}
+
+			if (is_hex and (((c >= 'a') and (c <= 'f')) or ((c >= 'A') and (c <= 'F'))))
+			{
+				result += c;
+				m_reader->Consume();
+				continue;
+			}
+
+			return;
+		}
+	}
+
+
 	bool Lexer::ScanString(char delim, std::string& result)
 	{
 //		std::cout << "Parser::Lexer::ScanString()" << std::endl;
 		char c;
+		result = "";
 
 		while (m_reader->Peek(&c))
 		{
@@ -249,7 +427,7 @@ return false;
 				return false;
 
 			// ending delim
-			if (c == '\"')
+			if (c == delim)
 			{
 				m_reader->Consume();
 				return true;

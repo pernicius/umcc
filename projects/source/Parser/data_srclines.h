@@ -6,18 +6,18 @@
 namespace Parser {
 
 
-	struct data_srcfiles {
+	typedef struct {
 		std::string name;  // name of file (with path)
-	};
-	extern std::vector<data_srcfiles> g_data_srcfiles;
+	} data_srcfiles;
+	extern std::vector<data_srcfiles> v_data_srcfiles;
 
 
-	struct data_srclines {
+	typedef struct {
 		short file_idx;    // index into g_vsrcfiles
 		short line_number; // line in file
 		std::string line;  // line content
-	};
-	extern std::vector<data_srclines> g_data_srclines;
+	} data_srclines;
+	extern std::vector<data_srclines> v_data_srclines;
 
 
 } // namespace Parser

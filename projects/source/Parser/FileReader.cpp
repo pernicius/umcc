@@ -8,6 +8,10 @@
 namespace Parser {
 
 
+	std::vector<data_srcfiles> v_data_srcfiles;
+	std::vector<data_srclines> v_data_srclines;
+
+
 	FileReader::FileReader(const std::string& filename)
 		: m_filename(filename)
 	{
@@ -41,8 +45,8 @@ namespace Parser {
 		// store file data
 		data_srcfiles sf;
 		sf.name = corrfilename;
-		g_data_srcfiles.push_back(sf);
-		m_file_idx = g_data_srcfiles.size() - 1;
+		v_data_srcfiles.push_back(sf);
+		m_file_idx = (short)v_data_srcfiles.size() - 1;
 
 		// init buffer and pointer
 		if (!ReadLine())
@@ -130,9 +134,10 @@ namespace Parser {
 	}
 
 
-	short FileReader::GetPos()
+	void FileReader::GetPos(short& coll, short& line_idx)
 	{
-		return m_linepos;
+		coll = m_linepos;
+		line_idx = (short)v_data_srclines.size() - 1;
 	}
 
 
@@ -149,7 +154,7 @@ namespace Parser {
 		sl.file_idx = m_file_idx;
 		sl.line_number = m_linecount;
 		sl.line = m_line;
-		g_data_srclines.push_back(sl);
+		v_data_srclines.push_back(sl);
 
 		return true;
 	}

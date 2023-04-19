@@ -36,7 +36,7 @@ namespace Parser {
 		 */
 		bool Consume(char* c = nullptr);
 
-		short GetPos();
+		void GetPos(short& coll, short& line_idx);
 
 	private:
 
@@ -45,7 +45,7 @@ namespace Parser {
 		// internal file-name and file-stream
 		const std::string& m_filename;
 		std::ifstream m_file;
-		short m_file_idx;
+		short m_file_idx = 0;
 
 		// internal buffer and pointer
 		std::string m_line;
