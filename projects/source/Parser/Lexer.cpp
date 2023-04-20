@@ -49,6 +49,7 @@ namespace Parser {
 			if (!m_reader->Peek(&c))
 				return true;
 
+			// comments
 			if (c == '/')
 			{
 				if (m_reader->Peek(&c2, 1))
@@ -63,7 +64,7 @@ namespace Parser {
 					}
 
 					// multi-line comments
-					// TODO...
+					// TODO... multi-line comments
 				}
 			}
 
@@ -95,7 +96,7 @@ namespace Parser {
 					// quotes
 					if (!m_reader->Consume(&c))
 						return false;
-					// TODO...
+					// TODO... error handling
 					if (c != '"' and c != '\'')
 					{
 						std::cout << "ERROR: begin of string '\"' expected" << std::endl;
@@ -109,11 +110,11 @@ namespace Parser {
 						std::cout << "ERROR: ScanString() returns false" << std::endl;
 						return false;
 					}
-					std::cout << "Lexer -> found #include command for file: \"" << includefile << "\"" << std::endl;
+//					std::cout << "Lexer -> found #include command for file: \"" << includefile << "\"" << std::endl;
 
 					// include file
 					includefile = std::filesystem::path(filename).remove_filename().generic_string() + includefile;
-					std::cout << "Lexer -> including file: \"" << includefile << "\"" << std::endl;
+//					std::cout << "Lexer -> including file: \"" << includefile << "\"" << std::endl;
 
 					FileReader* pOldReader = m_reader;
 					bool subresult = GenerateTokens(includefile);
@@ -124,9 +125,7 @@ namespace Parser {
 						return false;
 
 					// next line
-					if (!SkipRestofLine())
-						return false;
-					// TODO...
+					SkipRestofLine();
 
 					// continue parsing
 					continue;
@@ -150,7 +149,7 @@ namespace Parser {
 					return false;
 				}
 
-				std::cout << "Lexer -> found TOKEN_SECTION(\"." << section << "\")" << std::endl;
+//				std::cout << "Lexer -> found TOKEN_SECTION(\"." << section << "\")" << std::endl;
 
 				// store token
 				token_data td;
@@ -171,7 +170,7 @@ namespace Parser {
 				std::string buf;
 				ScanNumber(buf);
 
-				std::cout << "Lexer -> found TOKEN_NUMBER(\"" << buf << "\")" << std::endl;
+//				std::cout << "Lexer -> found TOKEN_NUMBER(\"" << buf << "\")" << std::endl;
 
 				// store token
 				token_data td;
@@ -197,7 +196,7 @@ namespace Parser {
 					return false;
 				}
 
-				std::cout << "Lexer -> found TOKEN_SYMBOL(\"" << symbol << "\")" << std::endl;
+//				std::cout << "Lexer -> found TOKEN_SYMBOL(\"" << symbol << "\")" << std::endl;
 
 				// store token
 				token_data td;
@@ -213,7 +212,7 @@ namespace Parser {
 			}
 
 			// TOKEN_STRING
-			// TODO...
+			// TODO... TOKEN_STRING
 
 			// single char tokens
 			if ((c == '=') or (c == ':') or (c == ';') or (c == ',') or (c == '{') or (c == '}') or (c == '(') or (c == ')') or (c == '[') or (c == ']'))
@@ -222,27 +221,27 @@ namespace Parser {
 
 				if (c == '=')
 				{
-					std::cout << "Lexer -> found TOKEN_EQUAL(\"" << c << "\")" << std::endl;
+//					std::cout << "Lexer -> found TOKEN_EQUAL(\"" << c << "\")" << std::endl;
 					t = TOKEN_EQUAL;
 				}
 				if (c == ':')
 				{
-					std::cout << "Lexer -> found TOKEN_COLON(\"" << c << "\")" << std::endl;
+//					std::cout << "Lexer -> found TOKEN_COLON(\"" << c << "\")" << std::endl;
 					t = TOKEN_COLON;
 				}
 				if (c == ';')
 				{
-					std::cout << "Lexer -> found TOKEN_SEMI(\"" << c << "\")" << std::endl;
+//					std::cout << "Lexer -> found TOKEN_SEMI(\"" << c << "\")" << std::endl;
 					t = TOKEN_SEMI;
 				}
 				if (c == ',')
 				{
-					std::cout << "Lexer -> found TOKEN_COMMA(\"" << c << "\")" << std::endl;
+//					std::cout << "Lexer -> found TOKEN_COMMA(\"" << c << "\")" << std::endl;
 					t = TOKEN_COMMA;
 				}
 				if ((c == '{') or (c == '}') or (c == '(') or (c == ')') or (c == '[') or (c == ']'))
 				{
-					std::cout << "Lexer -> found TOKEN_PAREN(\"" << c << "\")" << std::endl;
+//					std::cout << "Lexer -> found TOKEN_PAREN(\"" << c << "\")" << std::endl;
 					t = TOKEN_PAREN;
 				}
 
