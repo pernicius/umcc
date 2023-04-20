@@ -138,17 +138,154 @@ std::cout << "inputline" << std::endl;
 			}
 			else if (p_token->value.compare("OUTPUTS") == 0)
 			{
+				while (1)
+				{
+					// end-of-section ?
+					if (TestToken(TOKEN_PAREN, "}"))
+					{
+						TokenConsume();
+						break;
+					}
 
-// TODO: current working spot
-std::cout << "==DEBUG-STOP==" << std::endl;
-return false;
+					std::cout << "outputline" << std::endl;
+
+					// format(1):  <number> <colon> <symbol> <semi>
+					// format(2):  <number> <colon> <symbol> <comma> <number> <semi>
+
+					// (1), (2)
+					if (!CheckToken(&p_tmp, TOKEN_NUMBER, "", "ERROR: number expected"))
+						return false;
+					if (!CheckToken(&p_tmp, TOKEN_COLON, "", "ERROR: character ':' expected"))
+						return false;
+					if (!CheckToken(&p_tmp, TOKEN_SYMBOL, "", "ERROR: symbol expected"))
+						return false;
+
+					// (2)
+					if (!TestToken(TOKEN_SEMI, ""))
+					{
+						if (!CheckToken(&p_tmp, TOKEN_COMMA, "", "ERROR: character ',' expected"))
+							return false;
+						if (!CheckToken(&p_tmp, TOKEN_NUMBER, "", "ERROR: number expected"))
+							return false;
+					}
+
+					// (1), (2)
+					if (!CheckToken(&p_tmp, TOKEN_SEMI, "", "ERROR: character ';' expected"))
+						return false;
+				}
+				continue;
 			}
-//			else if (p_token->value.compare("CONSTANTS") == 0)
-//			{
-//			}
-//			else if (p_token->value.compare("RULE") == 0)
-//			{
-//			}
+			else if (p_token->value.compare("CONSTANTS") == 0)
+			{
+				while (1)
+				{
+					// end-of-section ?
+					if (TestToken(TOKEN_PAREN, "}"))
+					{
+						TokenConsume();
+						break;
+					}
+
+					std::cout << "constantline" << std::endl;
+
+					// format:  <symbol> <colon> <number> <semi>
+					if (!CheckToken(&p_tmp, TOKEN_SYMBOL, "", "ERROR: symbol expected"))
+						return false;
+					if (!CheckToken(&p_tmp, TOKEN_COLON, "", "ERROR: character ':' expected"))
+						return false;
+					if (!CheckToken(&p_tmp, TOKEN_NUMBER, "", "ERROR: number expected"))
+						return false;
+					if (!CheckToken(&p_tmp, TOKEN_SEMI, "", "ERROR: character ';' expected"))
+						return false;
+				}
+				continue;
+			}
+			else if (p_token->value.compare("RULE") == 0)
+			{
+				// format:  <paren'('> ... <paren')> <comma> <paren'('> ... <paren')>
+				if (!CheckToken(&p_tmp, TOKEN_PAREN, "(", "ERROR: opening brackets '(' expected"))
+					return false;
+
+				// input filter
+				while (1)
+				{
+					// format(1):  <symbol> <equal> <number>
+					// format(2):  <symbol> <equal> <symbol>
+
+					// (1), (2)
+					if (!CheckToken(&p_tmp, TOKEN_SYMBOL, "", "ERROR: symbol expected"))
+						return false;
+					if (!CheckToken(&p_tmp, TOKEN_EQUAL, "", "ERROR: character '=' expected"))
+						return false;
+
+					// (1)
+					if (TestToken(TOKEN_NUMBER, ""))
+					{
+						if (!CheckToken(&p_tmp, TOKEN_NUMBER, "", "ERROR: number expected"))
+							return false;
+					}
+					// (2)
+					else
+					{
+						if (!CheckToken(&p_tmp, TOKEN_SYMBOL, "", "ERROR: symbol expected"))
+							return false;
+					}
+					
+					// end-of-filter ?
+					if (!TestToken(TOKEN_COMMA, ""))
+						break;
+					TokenConsume();
+				}
+
+				if (!CheckToken(&p_tmp, TOKEN_PAREN, ")", "ERROR: closing brackets ')' expected"))
+					return false;
+				if (!CheckToken(&p_tmp, TOKEN_COMMA, "", "ERROR: character ',' expected"))
+					return false;
+				if (!CheckToken(&p_tmp, TOKEN_PAREN, "(", "ERROR: opening brackets '(' expected"))
+					return false;
+
+				// output setting
+				while (1)
+				{
+					// format(1):  <symbol> <equal> <number>
+					// format(2):  <symbol> <equal> <symbol>
+					// format(2):  <symbol>
+
+					// (1), (2), (3)
+					if (!CheckToken(&p_tmp, TOKEN_SYMBOL, "", "ERROR: symbol expected"))
+						return false;
+
+					// (1), (2)
+					if (TestToken(TOKEN_EQUAL, ""))
+					{
+						if (!CheckToken(&p_tmp, TOKEN_EQUAL, "", "ERROR: character '=' expected"))
+							return false;
+
+						// (1)
+						if (TestToken(TOKEN_NUMBER, ""))
+						{
+							if (!CheckToken(&p_tmp, TOKEN_NUMBER, "", "ERROR: number expected"))
+								return false;
+						}
+						// (2)
+						else
+						{
+							if (!CheckToken(&p_tmp, TOKEN_SYMBOL, "", "ERROR: symbol expected"))
+								return false;
+						}
+					}
+
+					// end-of-setting ?
+					if (!TestToken(TOKEN_COMMA, ""))
+						break;
+					TokenConsume();
+				}
+
+				if (!CheckToken(&p_tmp, TOKEN_PAREN, ")", "ERROR: closing brackets ')' expected"))
+					return false;
+				if (!CheckToken(&p_tmp, TOKEN_PAREN, "}", "ERROR: closing brackets '}' expected"))
+					return false;
+			}
 			else
 			{
 				std::cout << "ERROR: unsupported section type \"." << p_token->value << "\"" << std::endl;

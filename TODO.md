@@ -1,12 +1,13 @@
-TODOs:
-======
+# TODOs:
+
+currently working on:
+- finishing the parser class
 
 main:
 - argument handling (using cxxopts)
 
 Parser namespace:
 - much more error checking in Reader/Lexer
-- the real parser class
 - support for macros
 - support for more complex rules
 
