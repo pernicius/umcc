@@ -8,8 +8,9 @@
 namespace Parser {
 
 
-	std::vector<input_data> data_inputs;
-	std::vector<signal_data> data_signals;
+	// see "data_parsed.h"
+	std::map<std::string, input_data> data_inputs;
+	std::map<std::string, signal_data> data_signals;
 	std::map<std::string, output_data> data_outputs;
 	std::map<std::string, short> data_constants;
 	std::vector<rule_data> data_rules;
@@ -51,6 +52,7 @@ namespace Parser {
 						break;
 					}
 
+					std::string key;
 					input_data data;
 
 					// format:  <number> <colon> <symbol> <semi>
@@ -61,12 +63,12 @@ namespace Parser {
 						return false;
 					if (!CheckToken(&p_tmp, TOKEN_SYMBOL, "", "ERROR: symbol expected"))
 						return false;
-					data.symbol = p_tmp->value;
+					key = p_tmp->value;
 					if (!CheckToken(&p_tmp, TOKEN_SEMI, "", "ERROR: character ';' expected"))
 						return false;
 
 					// store data
-					data_inputs.push_back(data);
+					data_inputs[key] = data;
 				}
 				continue;
 
@@ -82,13 +84,14 @@ namespace Parser {
 						break;
 					}
 
+					std::string key;
 					signal_data data;
 					data.num_bits = 0;
 
 					// format:  <symbol> <paren'('> ... <paren')'> <semi>
 					if (!CheckToken(&p_tmp, TOKEN_SYMBOL, "", "ERROR: symbol expected"))
 						return false;
-					data.symbol = p_tmp->value;
+					key = p_tmp->value;
 					if (!CheckToken(&p_tmp, TOKEN_PAREN, "(", "ERROR: opening brackets '(' expected"))
 						return false;
 
@@ -160,7 +163,7 @@ namespace Parser {
 						return false;
 
 					// store data
-					data_signals.push_back(data);
+					data_signals[key] = data;
 				}
 				continue;
 			}

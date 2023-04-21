@@ -11,9 +11,8 @@ namespace Parser {
 
 	typedef struct {
 		short num_bits;
-		std::string symbol;
 	} input_data;
-	extern std::vector<input_data> data_inputs;
+	extern std::map<std::string, input_data> data_inputs;
 
 
 	// ===== SIGNALS
@@ -27,10 +26,9 @@ namespace Parser {
 
 	typedef struct {
 		short num_bits;
-		std::string symbol;
 		std::vector<signal_bit> v_bits;
 	} signal_data;
-	extern std::vector<signal_data> data_signals;
+	extern std::map<std::string, signal_data> data_signals;
 
 
 	// ===== OUTPUTS
