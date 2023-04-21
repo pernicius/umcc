@@ -8,11 +8,11 @@
 namespace Parser {
 
 
-	std::vector<input_data> v_data_inputs;
-	std::vector<signal_data> v_data_signals;
-	std::vector<output_data> v_data_outputs;
-	std::vector<constant_data> v_data_constants;
-
+	std::vector<input_data> data_inputs;
+	std::vector<signal_data> data_signals;
+	std::map<std::string, output_data> data_outputs;
+	std::map<std::string, short> data_constants;
+	std::vector<rule_data> data_rules;
 
 
 	Parser::Parser()
@@ -34,8 +34,6 @@ namespace Parser {
 				std::cout << "ERROR: section expected" << std::endl;
 				return false;
 			}
-
-			std::cout << "Parser -> found section \"." << p_token->value << "\"" << std::endl;
 
 			// section block start
 			if (!CheckToken(&p_tmp, TOKEN_PAREN, "{", "ERROR: opening brackets '{' expected"))
@@ -68,7 +66,7 @@ namespace Parser {
 						return false;
 
 					// store data
-					v_data_inputs.push_back(data);
+					data_inputs.push_back(data);
 				}
 				continue;
 
@@ -162,7 +160,7 @@ namespace Parser {
 						return false;
 
 					// store data
-					v_data_signals.push_back(data);
+					data_signals.push_back(data);
 				}
 				continue;
 			}
@@ -177,6 +175,7 @@ namespace Parser {
 						break;
 					}
 
+					std::string key;
 					output_data data;
 					data.def_val = 0;
 
@@ -191,7 +190,7 @@ namespace Parser {
 						return false;
 					if (!CheckToken(&p_tmp, TOKEN_SYMBOL, "", "ERROR: symbol expected"))
 						return false;
-					data.symbol = p_tmp->value;
+					key = p_tmp->value;
 
 					// (2)
 					if (!TestToken(TOKEN_SEMI, ""))
@@ -208,7 +207,7 @@ namespace Parser {
 						return false;
 
 					// store data
-					v_data_outputs.push_back(data);
+					data_outputs[key] = data;
 				}
 				continue;
 			}
@@ -223,22 +222,23 @@ namespace Parser {
 						break;
 					}
 
-					constant_data data;
+					std::string key;
+					short value;
 
 					// format:  <symbol> <colon> <number> <semi>
 					if (!CheckToken(&p_tmp, TOKEN_SYMBOL, "", "ERROR: symbol expected"))
 						return false;
-					data.symbol = p_tmp->value;
+					key = p_tmp->value;
 					if (!CheckToken(&p_tmp, TOKEN_COLON, "", "ERROR: character ':' expected"))
 						return false;
 					if (!CheckToken(&p_tmp, TOKEN_NUMBER, "", "ERROR: number expected"))
 						return false;
-					data.value = to_number(p_tmp->value);
+					value = to_number(p_tmp->value);
 					if (!CheckToken(&p_tmp, TOKEN_SEMI, "", "ERROR: character ';' expected"))
 						return false;
 
 					// store data
-					v_data_constants.push_back(data);
+					data_constants[key] = value;
 				}
 				continue;
 			}
@@ -248,17 +248,20 @@ namespace Parser {
 				if (!CheckToken(&p_tmp, TOKEN_PAREN, "(", "ERROR: opening brackets '(' expected"))
 					return false;
 
-				std::cout << "rule" << std::endl;
+				rule_data data;
 
 				// input filter
 				while (1)
 				{
+					rule_filter filter;
+
 					// format(1):  <symbol> <equal> <number>
 					// format(2):  <symbol> <equal> <symbol>
 
 					// (1), (2)
 					if (!CheckToken(&p_tmp, TOKEN_SYMBOL, "", "ERROR: symbol expected"))
 						return false;
+					filter.symbol = p_tmp->value;
 					if (!CheckToken(&p_tmp, TOKEN_EQUAL, "", "ERROR: character '=' expected"))
 						return false;
 
@@ -267,13 +270,25 @@ namespace Parser {
 					{
 						if (!CheckToken(&p_tmp, TOKEN_NUMBER, "", "ERROR: number expected"))
 							return false;
+						filter.value = to_number(p_tmp->value);
 					}
 					// (2)
 					else
 					{
 						if (!CheckToken(&p_tmp, TOKEN_SYMBOL, "", "ERROR: symbol expected"))
 							return false;
+
+						// lookup constant
+						if (!data_constants.contains(p_tmp->value))
+						{
+							std::cout << "ERROR: constant not defined" << std::endl;
+							return false;
+						}
+						filter.value = data_constants[p_tmp->value];
 					}
+
+					// store filter
+					data.filters.push_back(filter);
 					
 					// end-of-filter ?
 					if (!TestToken(TOKEN_COMMA, ""))
@@ -291,13 +306,17 @@ namespace Parser {
 				// output setting
 				while (1)
 				{
+					rule_setting setting;
+					setting.value = -1;
+
 					// format(1):  <symbol> <equal> <number>
 					// format(2):  <symbol> <equal> <symbol>
-					// format(2):  <symbol>
+					// format(3):  <symbol>
 
 					// (1), (2), (3)
 					if (!CheckToken(&p_tmp, TOKEN_SYMBOL, "", "ERROR: symbol expected"))
 						return false;
+					setting.symbol = p_tmp->value;
 
 					// (1), (2)
 					if (TestToken(TOKEN_EQUAL, ""))
@@ -310,14 +329,30 @@ namespace Parser {
 						{
 							if (!CheckToken(&p_tmp, TOKEN_NUMBER, "", "ERROR: number expected"))
 								return false;
+							setting.value = to_number(p_tmp->value);
 						}
 						// (2)
 						else
 						{
 							if (!CheckToken(&p_tmp, TOKEN_SYMBOL, "", "ERROR: symbol expected"))
 								return false;
+
+							// lookup constant
+							if (!data_constants.contains(p_tmp->value))
+							{
+								std::cout << "ERROR: constant not defined" << std::endl;
+								return false;
+							}
+							setting.value = data_constants[p_tmp->value];
 						}
 					}
+
+					// lookup default value of output
+					if (setting.value == -1)
+						setting.value = ~data_outputs[setting.symbol].def_val;
+
+					// store setting
+					data.settings.push_back(setting);
 
 					// end-of-setting ?
 					if (!TestToken(TOKEN_COMMA, ""))
@@ -329,6 +364,9 @@ namespace Parser {
 					return false;
 				if (!CheckToken(&p_tmp, TOKEN_PAREN, "}", "ERROR: closing brackets '}' expected"))
 					return false;
+
+				// store data
+				data_rules.push_back(data);
 			}
 			else
 			{

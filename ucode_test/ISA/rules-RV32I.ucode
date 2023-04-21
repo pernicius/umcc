@@ -7,6 +7,7 @@
 //
 //    <input_filter>   = <input_name>=<value>, ...
 //    <output_setting> = <output_name>=<value>, ...
+//                       if <value> is unspecified the output get its inverted default value
 //    <input_name>     can be an actual .INPUT(S) or a .SIGNAL(S)
 //    <value>          can be a number or a .CONSTANT(S)
 
