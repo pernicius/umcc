@@ -2,7 +2,17 @@
 
 #include "Parser.h"
 
+#include "data_parsed.h"
+
+
 namespace Parser {
+
+
+	std::vector<input_data> v_data_inputs;
+	std::vector<signal_data> v_data_signals;
+	std::vector<output_data> v_data_outputs;
+	std::vector<constant_data> v_data_constants;
+
 
 
 	Parser::Parser()
@@ -43,17 +53,22 @@ namespace Parser {
 						break;
 					}
 
-std::cout << "inputline" << std::endl;
+					input_data data;
 
 					// format:  <number> <colon> <symbol> <semi>
 					if (!CheckToken(&p_tmp, TOKEN_NUMBER, "", "ERROR: number expected"))
 						return false;
+					data.num_bits = to_number(p_tmp->value);
 					if (!CheckToken(&p_tmp, TOKEN_COLON, "", "ERROR: character ':' expected"))
 						return false;
 					if (!CheckToken(&p_tmp, TOKEN_SYMBOL, "", "ERROR: symbol expected"))
 						return false;
+					data.symbol = p_tmp->value;
 					if (!CheckToken(&p_tmp, TOKEN_SEMI, "", "ERROR: character ';' expected"))
 						return false;
+
+					// store data
+					v_data_inputs.push_back(data);
 				}
 				continue;
 
@@ -69,11 +84,13 @@ std::cout << "inputline" << std::endl;
 						break;
 					}
 
-					std::cout << "signalline" << std::endl;
+					signal_data data;
+					data.num_bits = 0;
 
 					// format:  <symbol> <paren'('> ... <paren')'> <semi>
 					if (!CheckToken(&p_tmp, TOKEN_SYMBOL, "", "ERROR: symbol expected"))
 						return false;
+					data.symbol = p_tmp->value;
 					if (!CheckToken(&p_tmp, TOKEN_PAREN, "(", "ERROR: opening brackets '(' expected"))
 						return false;
 
@@ -87,13 +104,17 @@ std::cout << "inputline" << std::endl;
 							break;
 						}
 
-						std::cout << "signalbitline" << std::endl;
+						signal_bit data_bit;
+						data_bit.sel_bit = -1;
+						data_bit.const_val = -1;
 
 						// format(1):  <number> <colon> <symbol> <semi>
 						// format(2):  <number> <colon> <symbol> <paren'['> <number> <paren']'> <semi>
 						// format(3):  <number> <colon> <number> <semi>
 						if (!CheckToken(&p_tmp, TOKEN_NUMBER, "", "ERROR: number expected"))
 							return false;
+						data_bit.num_bits = to_number(p_tmp->value);
+						data.num_bits += data_bit.num_bits;
 						if (!CheckToken(&p_tmp, TOKEN_COLON, "", "ERROR: character ':' expected"))
 							return false;
 
@@ -102,6 +123,7 @@ std::cout << "inputline" << std::endl;
 						{
 							if (!CheckToken(&p_tmp, TOKEN_SYMBOL, "", "ERROR: symbol expected"))
 								return false;
+							data_bit.symbol = p_tmp->value;
 							// (1)
 							if (TestToken(TOKEN_SEMI, ""))
 							{
@@ -115,6 +137,7 @@ std::cout << "inputline" << std::endl;
 									return false;
 								if (!CheckToken(&p_tmp, TOKEN_NUMBER, "", "ERROR: number expected"))
 									return false;
+								data_bit.sel_bit = to_number(p_tmp->value);
 								if (!CheckToken(&p_tmp, TOKEN_PAREN, "]", "ERROR: closing brackets ']' expected"))
 									return false;
 								if (!CheckToken(&p_tmp, TOKEN_SEMI, "", "ERROR: character ';' expected"))
@@ -126,13 +149,20 @@ std::cout << "inputline" << std::endl;
 						{
 							if (!CheckToken(&p_tmp, TOKEN_NUMBER, "", "ERROR: number expected"))
 								return false;
+							data_bit.const_val = to_number(p_tmp->value);
 							if (!CheckToken(&p_tmp, TOKEN_SEMI, "", "ERROR: character ';' expected"))
 								return false;
 						}
+
+						// store bits
+						data.v_bits.push_back(data_bit);
 					}
 
 					if (!CheckToken(&p_tmp, TOKEN_SEMI, "", "ERROR: character ';' expected"))
 						return false;
+
+					// store data
+					v_data_signals.push_back(data);
 				}
 				continue;
 			}
@@ -147,7 +177,8 @@ std::cout << "inputline" << std::endl;
 						break;
 					}
 
-					std::cout << "outputline" << std::endl;
+					output_data data;
+					data.def_val = 0;
 
 					// format(1):  <number> <colon> <symbol> <semi>
 					// format(2):  <number> <colon> <symbol> <comma> <number> <semi>
@@ -155,10 +186,12 @@ std::cout << "inputline" << std::endl;
 					// (1), (2)
 					if (!CheckToken(&p_tmp, TOKEN_NUMBER, "", "ERROR: number expected"))
 						return false;
+					data.num_bits = to_number(p_tmp->value);
 					if (!CheckToken(&p_tmp, TOKEN_COLON, "", "ERROR: character ':' expected"))
 						return false;
 					if (!CheckToken(&p_tmp, TOKEN_SYMBOL, "", "ERROR: symbol expected"))
 						return false;
+					data.symbol = p_tmp->value;
 
 					// (2)
 					if (!TestToken(TOKEN_SEMI, ""))
@@ -167,11 +200,15 @@ std::cout << "inputline" << std::endl;
 							return false;
 						if (!CheckToken(&p_tmp, TOKEN_NUMBER, "", "ERROR: number expected"))
 							return false;
+						data.def_val = to_number(p_tmp->value);
 					}
 
 					// (1), (2)
 					if (!CheckToken(&p_tmp, TOKEN_SEMI, "", "ERROR: character ';' expected"))
 						return false;
+
+					// store data
+					v_data_outputs.push_back(data);
 				}
 				continue;
 			}
@@ -186,17 +223,22 @@ std::cout << "inputline" << std::endl;
 						break;
 					}
 
-					std::cout << "constantline" << std::endl;
+					constant_data data;
 
 					// format:  <symbol> <colon> <number> <semi>
 					if (!CheckToken(&p_tmp, TOKEN_SYMBOL, "", "ERROR: symbol expected"))
 						return false;
+					data.symbol = p_tmp->value;
 					if (!CheckToken(&p_tmp, TOKEN_COLON, "", "ERROR: character ':' expected"))
 						return false;
 					if (!CheckToken(&p_tmp, TOKEN_NUMBER, "", "ERROR: number expected"))
 						return false;
+					data.value = to_number(p_tmp->value);
 					if (!CheckToken(&p_tmp, TOKEN_SEMI, "", "ERROR: character ';' expected"))
 						return false;
+
+					// store data
+					v_data_constants.push_back(data);
 				}
 				continue;
 			}
@@ -205,6 +247,8 @@ std::cout << "inputline" << std::endl;
 				// format:  <paren'('> ... <paren')> <comma> <paren'('> ... <paren')>
 				if (!CheckToken(&p_tmp, TOKEN_PAREN, "(", "ERROR: opening brackets '(' expected"))
 					return false;
+
+				std::cout << "rule" << std::endl;
 
 				// input filter
 				while (1)
@@ -375,6 +419,45 @@ std::cout << "inputline" << std::endl;
 		}
 
 		return true;
+	}
+
+
+	short Parser::to_number(std::string& value)
+	{
+		short result = 0;
+
+		// decimal
+		if ((value.length() < 3) or ((value.length() > 2) and ((value[1] != 'x') and (value[1] != 'b'))))
+			return std::atoi(value.c_str());
+
+		// binary
+		if (value[1] == 'b')
+		{
+			for (auto x = 2; x < value.length(); x++)
+			{
+				result = result << 1;
+				result += value[x] - '0';
+			}
+			return result;
+		}
+
+		// hexadecimal
+		if (value[1] == 'x')
+		{
+			for (auto x = 2; x < value.length(); x++)
+			{
+				result = result << 4;
+				if ((value[x] >= '0') and (value[x] <= '9'))
+					result += value[x] - '0';
+				else if ((value[x] >= 'a') and (value[x] <= 'z'))
+					result += value[x] - 'a';
+				else
+					result += value[x] - 'A';
+			}
+			return result;
+		}
+
+		return 0;
 	}
 
 

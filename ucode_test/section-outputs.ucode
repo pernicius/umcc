@@ -19,8 +19,7 @@
     1: Mem_rd,  0;
     1: Mem_wr,  0;
     1: Mem_mux;
-    4: ALU_ctrl;
-    1: _UNUSED;
+    5: ALU_ctrl;
 
     // === Rom3 ===
     8: _UNUSED;

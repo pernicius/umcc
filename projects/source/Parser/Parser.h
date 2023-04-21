@@ -25,6 +25,7 @@ namespace Parser {
 		bool CheckToken(token_data** p_result, token_type req_type, const std::string& req_value, const std::string& err_msg);
 		bool TestToken(token_type req_type, const std::string& req_value);
 
+		short to_number(std::string& value);
 	};
 
 

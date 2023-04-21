@@ -28,7 +28,7 @@ int main()
 
 	auto sum_time = std::chrono::duration_cast<std::chrono::microseconds>(pars_stop - lex_start).count();
 	std::cout << "Done (" << (sum_time / 1000) << "." << (sum_time - (sum_time / 1000 * 1000)) << "ms)" << std::endl;
-	std::cout << "    Lexer:  " << (lex_time / 1000) << "." << (lex_time - (lex_time / 1000 * 1000)) << "ms" << std::endl;
-	std::cout << "    Parser: " << (pars_time / 1000) << "." << (pars_time - (pars_time / 1000 * 1000)) << "ms" << std::endl;
+	std::cout << " - Lexer:  " << (lex_time / 1000) << "." << (lex_time - (lex_time / 1000 * 1000)) << "ms" << std::endl;
+	std::cout << " - Parser: " << (pars_time / 1000) << "." << (pars_time - (pars_time / 1000 * 1000)) << "ms" << std::endl;
 	return 0;
 }
