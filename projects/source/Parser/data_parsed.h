@@ -10,7 +10,8 @@ namespace Parser {
 	// ===== INPUTS
 
 	typedef struct {
-		short num_bits;
+		short start_bit;  // position of the first bit in the input-word
+		short num_bits;   // size of the input symbol in bits
 	} input_data;
 	extern std::map<std::string, input_data> data_inputs;
 

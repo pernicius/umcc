@@ -40,9 +40,17 @@ namespace Parser {
 			if (!CheckToken(&p_tmp, TOKEN_PAREN, "{", "ERROR: opening brackets '{' expected"))
 				return false;
 
-			// 
 			if (p_token->value.compare("INPUTS") == 0)
 			{
+				// check if there was a previous .INPUTS section
+				if (data_inputs.size() > 0)
+				{
+					std::cout << "ERROR: only a single .INPUTS section is allowd" << std::endl;
+					return false;
+				}
+
+				short start_bit = 0;
+
 				while (1)
 				{
 					// end-of-section ?
@@ -58,7 +66,9 @@ namespace Parser {
 					// format:  <number> <colon> <symbol> <semi>
 					if (!CheckToken(&p_tmp, TOKEN_NUMBER, "", "ERROR: number expected"))
 						return false;
+					data.start_bit = start_bit;
 					data.num_bits = to_number(p_tmp->value);
+					start_bit += data.num_bits;
 					if (!CheckToken(&p_tmp, TOKEN_COLON, "", "ERROR: character ':' expected"))
 						return false;
 					if (!CheckToken(&p_tmp, TOKEN_SYMBOL, "", "ERROR: symbol expected"))
