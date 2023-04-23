@@ -1,6 +1,7 @@
 #include "pch.h"
 
 #include "Parser.h"
+#include "Util.h"
 
 #include "data_parsed.h"
 
@@ -31,23 +32,18 @@ namespace Parser {
 		while (TokenConsume(&p_token))
 		{
 			if (p_token->type != TOKEN_SECTION)
-			{
-				std::cout << "ERROR: section expected" << std::endl;
-				return false;
-			}
-
-			// section block start
-			if (!CheckToken(&p_tmp, TOKEN_PAREN, "{", "ERROR: opening brackets '{' expected"))
+				return PrintLineError(*p_token, "section expected");
+			if (!CheckToken(&p_tmp, TOKEN_PAREN, "{", "opening brackets '{' expected"))
 				return false;
 
+			// ==================
+			// ===== INPUTS =====
+			// ==================
 			if (p_token->value.compare("INPUTS") == 0)
 			{
 				// check if there was a previous .INPUTS section
 				if (data_inputs.size() > 0)
-				{
-					std::cout << "ERROR: only a single .INPUTS section is allowd" << std::endl;
-					return false;
-				}
+					return PrintLineError(*p_token, "only a single .INPUTS section is allowed");
 
 				short start_bit = 0;
 
@@ -64,17 +60,20 @@ namespace Parser {
 					input_data data;
 
 					// format:  <number> <colon> <symbol> <semi>
-					if (!CheckToken(&p_tmp, TOKEN_NUMBER, "", "ERROR: number expected"))
+					if (!CheckToken(&p_tmp, TOKEN_NUMBER, "", "number expected"))
 						return false;
 					data.start_bit = start_bit;
 					data.num_bits = to_number(p_tmp->value);
 					start_bit += data.num_bits;
-					if (!CheckToken(&p_tmp, TOKEN_COLON, "", "ERROR: character ':' expected"))
+// TODO: number of bits exceeded test
+					if (!CheckToken(&p_tmp, TOKEN_COLON, "", "character ':' expected"))
 						return false;
-					if (!CheckToken(&p_tmp, TOKEN_SYMBOL, "", "ERROR: symbol expected"))
+					if (!CheckToken(&p_tmp, TOKEN_SYMBOL, "", "symbol expected"))
 						return false;
+					if (data_inputs.count(key))
+						return PrintLineError(*p_tmp, "symbol already defined");
 					key = p_tmp->value;
-					if (!CheckToken(&p_tmp, TOKEN_SEMI, "", "ERROR: character ';' expected"))
+					if (!CheckToken(&p_tmp, TOKEN_SEMI, "", "character ';' expected"))
 						return false;
 
 					// store data
@@ -83,6 +82,9 @@ namespace Parser {
 				continue;
 
 			}
+			// ===================
+			// ===== SIGNALS =====
+			// ===================
 			else if (p_token->value.compare("SIGNALS") == 0)
 			{
 				while (1)
@@ -99,10 +101,11 @@ namespace Parser {
 					data.num_bits = 0;
 
 					// format:  <symbol> <paren'('> ... <paren')'> <semi>
-					if (!CheckToken(&p_tmp, TOKEN_SYMBOL, "", "ERROR: symbol expected"))
+					if (!CheckToken(&p_tmp, TOKEN_SYMBOL, "", "symbol expected"))
 						return false;
+// TOTO: test: double def
 					key = p_tmp->value;
-					if (!CheckToken(&p_tmp, TOKEN_PAREN, "(", "ERROR: opening brackets '(' expected"))
+					if (!CheckToken(&p_tmp, TOKEN_PAREN, "(", "opening brackets '(' expected"))
 						return false;
 
 					// bit definition
@@ -122,46 +125,48 @@ namespace Parser {
 						// format(1):  <number> <colon> <symbol> <semi>
 						// format(2):  <number> <colon> <symbol> <paren'['> <number> <paren']'> <semi>
 						// format(3):  <number> <colon> <number> <semi>
-						if (!CheckToken(&p_tmp, TOKEN_NUMBER, "", "ERROR: number expected"))
+						if (!CheckToken(&p_tmp, TOKEN_NUMBER, "", "number expected"))
 							return false;
 						data_bit.num_bits = to_number(p_tmp->value);
 						data.num_bits += data_bit.num_bits;
-						if (!CheckToken(&p_tmp, TOKEN_COLON, "", "ERROR: character ':' expected"))
+						if (!CheckToken(&p_tmp, TOKEN_COLON, "", "character ':' expected"))
 							return false;
 
 						// (1), (2)
 						if (TestToken(TOKEN_SYMBOL, ""))
 						{
-							if (!CheckToken(&p_tmp, TOKEN_SYMBOL, "", "ERROR: symbol expected"))
+							if (!CheckToken(&p_tmp, TOKEN_SYMBOL, "", "symbol expected"))
 								return false;
+// TODO: test: exists
 							data_bit.symbol = p_tmp->value;
 							// (1)
 							if (TestToken(TOKEN_SEMI, ""))
 							{
-								if (!CheckToken(&p_tmp, TOKEN_SEMI, "", "ERROR: character ';' expected"))
+								if (!CheckToken(&p_tmp, TOKEN_SEMI, "", "character ';' expected"))
 									return false;
 							}
 							// (2)
 							else
 							{
-								if (!CheckToken(&p_tmp, TOKEN_PAREN, "[", "ERROR: opening brackets '[' expected"))
+								if (!CheckToken(&p_tmp, TOKEN_PAREN, "[", "opening brackets '[' expected"))
 									return false;
-								if (!CheckToken(&p_tmp, TOKEN_NUMBER, "", "ERROR: number expected"))
+								if (!CheckToken(&p_tmp, TOKEN_NUMBER, "", "number expected"))
 									return false;
+// TODO: test: value '1'
 								data_bit.sel_bit = to_number(p_tmp->value);
-								if (!CheckToken(&p_tmp, TOKEN_PAREN, "]", "ERROR: closing brackets ']' expected"))
+								if (!CheckToken(&p_tmp, TOKEN_PAREN, "]", "closing brackets ']' expected"))
 									return false;
-								if (!CheckToken(&p_tmp, TOKEN_SEMI, "", "ERROR: character ';' expected"))
+								if (!CheckToken(&p_tmp, TOKEN_SEMI, "", "character ';' expected"))
 									return false;
 							}
 						}
 						// (3)
 						else
 						{
-							if (!CheckToken(&p_tmp, TOKEN_NUMBER, "", "ERROR: number expected"))
+							if (!CheckToken(&p_tmp, TOKEN_NUMBER, "", "number expected"))
 								return false;
 							data_bit.const_val = to_number(p_tmp->value);
-							if (!CheckToken(&p_tmp, TOKEN_SEMI, "", "ERROR: character ';' expected"))
+							if (!CheckToken(&p_tmp, TOKEN_SEMI, "", "character ';' expected"))
 								return false;
 						}
 
@@ -169,7 +174,7 @@ namespace Parser {
 						data.v_bits.push_back(data_bit);
 					}
 
-					if (!CheckToken(&p_tmp, TOKEN_SEMI, "", "ERROR: character ';' expected"))
+					if (!CheckToken(&p_tmp, TOKEN_SEMI, "", "character ';' expected"))
 						return false;
 
 					// store data
@@ -177,6 +182,9 @@ namespace Parser {
 				}
 				continue;
 			}
+			// ===================
+			// ===== OUTPUTS =====
+			// ===================
 			else if (p_token->value.compare("OUTPUTS") == 0)
 			{
 				while (1)
@@ -196,27 +204,28 @@ namespace Parser {
 					// format(2):  <number> <colon> <symbol> <comma> <number> <semi>
 
 					// (1), (2)
-					if (!CheckToken(&p_tmp, TOKEN_NUMBER, "", "ERROR: number expected"))
+					if (!CheckToken(&p_tmp, TOKEN_NUMBER, "", "number expected"))
 						return false;
 					data.num_bits = to_number(p_tmp->value);
-					if (!CheckToken(&p_tmp, TOKEN_COLON, "", "ERROR: character ':' expected"))
+					if (!CheckToken(&p_tmp, TOKEN_COLON, "", "character ':' expected"))
 						return false;
-					if (!CheckToken(&p_tmp, TOKEN_SYMBOL, "", "ERROR: symbol expected"))
+					if (!CheckToken(&p_tmp, TOKEN_SYMBOL, "", "symbol expected"))
 						return false;
+// TODO: test: double def (except '_UNUSED')
 					key = p_tmp->value;
 
 					// (2)
 					if (!TestToken(TOKEN_SEMI, ""))
 					{
-						if (!CheckToken(&p_tmp, TOKEN_COMMA, "", "ERROR: character ',' expected"))
+						if (!CheckToken(&p_tmp, TOKEN_COMMA, "", "character ',' expected"))
 							return false;
-						if (!CheckToken(&p_tmp, TOKEN_NUMBER, "", "ERROR: number expected"))
+						if (!CheckToken(&p_tmp, TOKEN_NUMBER, "", "number expected"))
 							return false;
 						data.def_val = to_number(p_tmp->value);
 					}
 
 					// (1), (2)
-					if (!CheckToken(&p_tmp, TOKEN_SEMI, "", "ERROR: character ';' expected"))
+					if (!CheckToken(&p_tmp, TOKEN_SEMI, "", "character ';' expected"))
 						return false;
 
 					// store data
@@ -224,6 +233,9 @@ namespace Parser {
 				}
 				continue;
 			}
+			// =====================
+			// ===== CONSTANTS =====
+			// =====================
 			else if (p_token->value.compare("CONSTANTS") == 0)
 			{
 				while (1)
@@ -239,15 +251,19 @@ namespace Parser {
 					short value;
 
 					// format:  <symbol> <colon> <number> <semi>
-					if (!CheckToken(&p_tmp, TOKEN_SYMBOL, "", "ERROR: symbol expected"))
+					if (!CheckToken(&p_tmp, TOKEN_SYMBOL, "", "symbol expected"))
 						return false;
+// TODO: test: def in inputs
+// TODO: test: def in signals
+// TODO: test: def in outputs
+// TODO: test: double def
 					key = p_tmp->value;
-					if (!CheckToken(&p_tmp, TOKEN_COLON, "", "ERROR: character ':' expected"))
+					if (!CheckToken(&p_tmp, TOKEN_COLON, "", "character ':' expected"))
 						return false;
-					if (!CheckToken(&p_tmp, TOKEN_NUMBER, "", "ERROR: number expected"))
+					if (!CheckToken(&p_tmp, TOKEN_NUMBER, "", "number expected"))
 						return false;
 					value = to_number(p_tmp->value);
-					if (!CheckToken(&p_tmp, TOKEN_SEMI, "", "ERROR: character ';' expected"))
+					if (!CheckToken(&p_tmp, TOKEN_SEMI, "", "character ';' expected"))
 						return false;
 
 					// store data
@@ -255,10 +271,13 @@ namespace Parser {
 				}
 				continue;
 			}
+			// ================
+			// ===== RULE =====
+			// ================
 			else if (p_token->value.compare("RULE") == 0)
 			{
 				// format:  <paren'('> ... <paren')> <comma> <paren'('> ... <paren')>
-				if (!CheckToken(&p_tmp, TOKEN_PAREN, "(", "ERROR: opening brackets '(' expected"))
+				if (!CheckToken(&p_tmp, TOKEN_PAREN, "(", "opening brackets '(' expected"))
 					return false;
 
 				rule_data data;
@@ -272,31 +291,29 @@ namespace Parser {
 					// format(2):  <symbol> <equal> <symbol>
 
 					// (1), (2)
-					if (!CheckToken(&p_tmp, TOKEN_SYMBOL, "", "ERROR: symbol expected"))
+					if (!CheckToken(&p_tmp, TOKEN_SYMBOL, "", "symbol expected"))
 						return false;
+// TODO: test: exists
 					filter.symbol = p_tmp->value;
-					if (!CheckToken(&p_tmp, TOKEN_EQUAL, "", "ERROR: character '=' expected"))
+					if (!CheckToken(&p_tmp, TOKEN_EQUAL, "", "character '=' expected"))
 						return false;
 
 					// (1)
 					if (TestToken(TOKEN_NUMBER, ""))
 					{
-						if (!CheckToken(&p_tmp, TOKEN_NUMBER, "", "ERROR: number expected"))
+						if (!CheckToken(&p_tmp, TOKEN_NUMBER, "", "number expected"))
 							return false;
 						filter.value = to_number(p_tmp->value);
 					}
 					// (2)
 					else
 					{
-						if (!CheckToken(&p_tmp, TOKEN_SYMBOL, "", "ERROR: symbol expected"))
+						if (!CheckToken(&p_tmp, TOKEN_SYMBOL, "", "symbol expected"))
 							return false;
 
 						// lookup constant
 						if (!data_constants.contains(p_tmp->value))
-						{
-							std::cout << "ERROR: constant not defined" << std::endl;
-							return false;
-						}
+							return PrintLineError(*p_tmp, "constant not defined");
 						filter.value = data_constants[p_tmp->value];
 					}
 
@@ -309,11 +326,11 @@ namespace Parser {
 					TokenConsume();
 				}
 
-				if (!CheckToken(&p_tmp, TOKEN_PAREN, ")", "ERROR: closing brackets ')' expected"))
+				if (!CheckToken(&p_tmp, TOKEN_PAREN, ")", "closing brackets ')' expected"))
 					return false;
-				if (!CheckToken(&p_tmp, TOKEN_COMMA, "", "ERROR: character ',' expected"))
+				if (!CheckToken(&p_tmp, TOKEN_COMMA, "", "character ',' expected"))
 					return false;
-				if (!CheckToken(&p_tmp, TOKEN_PAREN, "(", "ERROR: opening brackets '(' expected"))
+				if (!CheckToken(&p_tmp, TOKEN_PAREN, "(", "opening brackets '(' expected"))
 					return false;
 
 				// output setting
@@ -327,35 +344,33 @@ namespace Parser {
 					// format(3):  <symbol>
 
 					// (1), (2), (3)
-					if (!CheckToken(&p_tmp, TOKEN_SYMBOL, "", "ERROR: symbol expected"))
+					if (!CheckToken(&p_tmp, TOKEN_SYMBOL, "", "symbol expected"))
 						return false;
+// TODO: test: exists
 					setting.symbol = p_tmp->value;
 
 					// (1), (2)
 					if (TestToken(TOKEN_EQUAL, ""))
 					{
-						if (!CheckToken(&p_tmp, TOKEN_EQUAL, "", "ERROR: character '=' expected"))
+						if (!CheckToken(&p_tmp, TOKEN_EQUAL, "", "character '=' expected"))
 							return false;
 
 						// (1)
 						if (TestToken(TOKEN_NUMBER, ""))
 						{
-							if (!CheckToken(&p_tmp, TOKEN_NUMBER, "", "ERROR: number expected"))
+							if (!CheckToken(&p_tmp, TOKEN_NUMBER, "", "number expected"))
 								return false;
 							setting.value = to_number(p_tmp->value);
 						}
 						// (2)
 						else
 						{
-							if (!CheckToken(&p_tmp, TOKEN_SYMBOL, "", "ERROR: symbol expected"))
+							if (!CheckToken(&p_tmp, TOKEN_SYMBOL, "", "symbol expected"))
 								return false;
 
 							// lookup constant
 							if (!data_constants.contains(p_tmp->value))
-							{
-								std::cout << "ERROR: constant not defined" << std::endl;
-								return false;
-							}
+								return PrintLineError(*p_tmp, "constant not defined");
 							setting.value = data_constants[p_tmp->value];
 						}
 					}
@@ -373,19 +388,16 @@ namespace Parser {
 					TokenConsume();
 				}
 
-				if (!CheckToken(&p_tmp, TOKEN_PAREN, ")", "ERROR: closing brackets ')' expected"))
+				if (!CheckToken(&p_tmp, TOKEN_PAREN, ")", "closing brackets ')' expected"))
 					return false;
-				if (!CheckToken(&p_tmp, TOKEN_PAREN, "}", "ERROR: closing brackets '}' expected"))
+				if (!CheckToken(&p_tmp, TOKEN_PAREN, "}", "closing brackets '}' expected"))
 					return false;
 
 				// store data
 				data_rules.push_back(data);
 			}
 			else
-			{
-				std::cout << "ERROR: unsupported section type \"." << p_token->value << "\"" << std::endl;
-				return false;
-			}
+				return PrintLineError(*p_token, "unsupported section type");
 		}
 
 		return true;
@@ -425,29 +437,32 @@ namespace Parser {
 
 	bool Parser::CheckToken(token_data** p_result, token_type req_type, const std::string& req_value, const std::string& err_msg)
 	{
+		bool err = false;
+
 		// try to get a token
 		if (!TokenConsume(p_result))
 		{
+			// print error
 			std::cout << err_msg << std::endl;
 			return false;
 		}
 
 		// check type
-		if ((*p_result)->type != req_type)
+		if ((*p_result)->type == req_type)
 		{
-			std::cout << err_msg << std::endl;
-			return false;
-		}
-
-		// check value
-		if (req_value.length() > 0)
-		{
-			if ((*p_result)->value.compare(req_value) != 0)
+			// check value
+			if (req_value.length() > 0)
 			{
-				std::cout << err_msg << std::endl;
-				return false;
+				if ((*p_result)->value.compare(req_value) != 0)
+					err = true;
 			}
 		}
+		else
+			err = true;
+
+		// print error
+		if (err)
+			return PrintLineError(**p_result, err_msg);
 
 		return true;
 	}

@@ -204,7 +204,7 @@ namespace Parser {
 				td.value = symbol;
 				td.line_idx = p_line;
 				td.pos_start = p_coll;
-				td.pos_len = (short)symbol.length() + 1;
+				td.pos_len = (short)symbol.length();
 				v_data_tokens.push_back(td);
 
 				// continue parsing
