@@ -1,7 +1,10 @@
 #include "pch.h"
 
 #include "FileReader.h"
+#include "Util.h"
+
 #include "data_source.h"
+#include "errors.h"
 
 #include <filesystem>
 
@@ -15,32 +18,19 @@ namespace Parser {
 	FileReader::FileReader(const std::string& filename)
 		: m_filename(filename)
 	{
-//		std::cout << "Parser::FileReader::FileReader()" << std::endl;
-	}
-
-
-	FileReader::~FileReader()
-	{
-//		std::cout << "Parser::FileReader::~FileReader()" << std::endl;
 	}
 
 
 	bool FileReader::Init()
 	{
-//		std::cout << "Parser::FileReader::Init()" << std::endl;
-
 		// reformat filename
 		std::string corrfilename = std::filesystem::path(m_filename).remove_filename().generic_string()
 		                         + std::filesystem::path(m_filename).filename().generic_string();
-//		std::cout << "File (internal): \"" << corrfilename << "\"" << std::endl;
 
 		// open requested file
 		m_file.open(corrfilename, std::ifstream::in);
 		if (!m_file.is_open())
-		{
-			std::cout << "ERROR: can't open file" << std::endl;
-			return false;
-		}
+			return PrintErrorMsg(E_FILE_CANT_OPEN);
 
 		// store file data
 		data_sourcefiles sf;
@@ -66,21 +56,18 @@ namespace Parser {
 	 */
 	bool FileReader::Peek(char* c, short index)
 	{
-//		std::cout << "Parser::FileReader::Peek()" << std::endl;
-
 		if (!m_file)
 		{
 			// end-of-file reached
 			if (m_file.eof())
 				return false;
 			// any other error
-			std::cout << "ERROR: filestream error";
-			return false;
+			return PrintErrorMsg(E_FILE_READ);
 		}
 
 		// check position
 		if (m_linepos + index > m_line.length())
-			return false;
+			return PrintErrorMsg(E_FILE_INT);
 
 		// check end-of-line
 		if (m_linepos + index == m_line.length())
@@ -105,21 +92,17 @@ namespace Parser {
 	 */
 	bool FileReader::Consume(char* c)
 	{
-//		std::cout << "Parser::FileReader::Consume()" << std::endl;
-
 		if (!m_file)
 		{
 			// end-of-file reached
 			if (m_file.eof())
 				return false;
 			// any other error
-			std::cout << "ERROR: filestream error";
-			return false;
+			return PrintErrorMsg(E_FILE_READ);
 		}
 
 		if ((m_line.length() == 0) or (m_linepos >= m_line.length()))
 		{
-//			std::cout << "Parser::FileReader::Consume -> getline()" << std::endl;
 			ReadLine();
 			if (c != nullptr)
 				*c = '\n';

@@ -14,14 +14,11 @@ namespace Parser {
 	Lexer::Lexer()
 		: m_reader(nullptr)
 	{
-//		std::cout << "Parser::Lexer::Lexer()" << std::endl;
 	}
 
 
 	Lexer::~Lexer()
 	{
-//		std::cout << "Parser::Lexer::~Lexer()" << std::endl;
-
 		if (m_reader)
 			delete m_reader;
 	}
@@ -29,8 +26,6 @@ namespace Parser {
 
 	bool Lexer::GenerateTokens(const std::string& filename)
     {
-//		std::cout << "Parser::Lexer::GenerateTokens()" << std::endl;
-
 		// initialize the file reader
 		m_reader = new FileReader(filename);
 		if (!m_reader->Init())
@@ -277,8 +272,6 @@ namespace Parser {
 
 	bool Lexer::SkipWhitespaces(bool skip_newline)
 	{
-//		std::cout << "Parser::Lexer::SkipWhitespaces()" << std::endl;
-
 		char c;
 		while (m_reader->Peek(&c))
 		{
@@ -306,8 +299,6 @@ namespace Parser {
 
 	bool Lexer::SkipRestofLine()
 	{
-//		std::cout << "Parser::Lexer::SkipRestofLine()" << std::endl;
-
 		char c;
 		while (m_reader->Consume(&c))
 		{
@@ -321,7 +312,6 @@ namespace Parser {
 
 	bool Lexer::ScanSymbol(std::string& result)
 	{
-//		std::cout << "Parser::Lexer::ScanSymbol()" << std::endl;
 		char c;
 		result = "";
 
@@ -415,7 +405,6 @@ namespace Parser {
 
 	bool Lexer::ScanString(char delim, std::string& result)
 	{
-//		std::cout << "Parser::Lexer::ScanString()" << std::endl;
 		char c;
 		result = "";
 

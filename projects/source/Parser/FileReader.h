@@ -12,7 +12,6 @@ namespace Parser {
 
 		FileReader() = delete;
 		FileReader(const std::string& filename);
-		~FileReader();
 
 	public:
 

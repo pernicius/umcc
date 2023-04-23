@@ -3,6 +3,17 @@
 
 namespace Parser {
 
+	// ===== class FileReader =====
+
+	// i/o errors
+	constexpr char E_FILE_CANT_OPEN[]          = "can't open file";
+	constexpr char E_FILE_READ[]               = "can't read file";
+	// internals
+	constexpr char E_FILE_INT[]                = "internal error (please report)";
+
+	// ===== class Lexer
+
+	// ===== class Parser =====
 
 	// missing main tokens
 	constexpr char E_SYNTAX_MISS_SECTION[]     = "section expected";
