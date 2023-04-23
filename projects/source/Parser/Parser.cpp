@@ -4,6 +4,7 @@
 #include "Util.h"
 
 #include "data_parsed.h"
+#include "errors.h"
 
 
 namespace Parser {
@@ -32,8 +33,8 @@ namespace Parser {
 		while (TokenConsume(&p_token))
 		{
 			if (p_token->type != TOKEN_SECTION)
-				return PrintLineError(*p_token, "section expected");
-			if (!CheckToken(&p_tmp, TOKEN_PAREN, "{", "opening brackets '{' expected"))
+				return PrintLineError(*p_token, E_SYNTAX_MISS_SECTION);
+			if (!CheckToken(&p_tmp, TOKEN_PAREN, "{", E_SYNTAX_MISS_LCBRAC))
 				return false;
 
 			// ==================
@@ -43,7 +44,7 @@ namespace Parser {
 			{
 				// check if there was a previous .INPUTS section
 				if (data_inputs.size() > 0)
-					return PrintLineError(*p_token, "only a single .INPUTS section is allowed");
+					return PrintLineError(*p_token, E_SYNTAX_LIM_INPUT);
 
 				short start_bit = 0;
 
@@ -60,20 +61,26 @@ namespace Parser {
 					input_data data;
 
 					// format:  <number> <colon> <symbol> <semi>
-					if (!CheckToken(&p_tmp, TOKEN_NUMBER, "", "number expected"))
+
+					// <number>
+					if (!CheckToken(&p_tmp, TOKEN_NUMBER, "", E_SYNTAX_MISS_NUMBER))
 						return false;
 					data.start_bit = start_bit;
 					data.num_bits = to_number(p_tmp->value);
 					start_bit += data.num_bits;
 // TODO: number of bits exceeded test
-					if (!CheckToken(&p_tmp, TOKEN_COLON, "", "character ':' expected"))
+					// <colon>
+					if (!CheckToken(&p_tmp, TOKEN_COLON, "", E_SYNTAX_MISS_COLON))
 						return false;
-					if (!CheckToken(&p_tmp, TOKEN_SYMBOL, "", "symbol expected"))
+					// <symbol>
+					if (!CheckToken(&p_tmp, TOKEN_SYMBOL, "", E_SYNTAX_MISS_SYMBOL))
 						return false;
+					// test: double-def
 					if (data_inputs.count(key))
-						return PrintLineError(*p_tmp, "symbol already defined");
+						return PrintLineError(*p_tmp, E_SYNTAX_DOUBLE_SYMBOL);
+					// <semi>
 					key = p_tmp->value;
-					if (!CheckToken(&p_tmp, TOKEN_SEMI, "", "character ';' expected"))
+					if (!CheckToken(&p_tmp, TOKEN_SEMI, "", E_SYNTAX_MISS_SEMI))
 						return false;
 
 					// store data
@@ -101,11 +108,16 @@ namespace Parser {
 					data.num_bits = 0;
 
 					// format:  <symbol> <paren'('> ... <paren')'> <semi>
-					if (!CheckToken(&p_tmp, TOKEN_SYMBOL, "", "symbol expected"))
+
+					// <symbol>
+					if (!CheckToken(&p_tmp, TOKEN_SYMBOL, "", E_SYNTAX_MISS_SYMBOL))
 						return false;
-// TOTO: test: double def
+					// test: double-def
+					if (data_signals.count(p_tmp->value))
+						return PrintLineError(*p_tmp, E_SYNTAX_DOUBLE_SYMBOL);
 					key = p_tmp->value;
-					if (!CheckToken(&p_tmp, TOKEN_PAREN, "(", "opening brackets '(' expected"))
+					// <paren>
+					if (!CheckToken(&p_tmp, TOKEN_PAREN, "(", E_SYNTAX_MISS_LRBRAC))
 						return false;
 
 					// bit definition
@@ -125,56 +137,71 @@ namespace Parser {
 						// format(1):  <number> <colon> <symbol> <semi>
 						// format(2):  <number> <colon> <symbol> <paren'['> <number> <paren']'> <semi>
 						// format(3):  <number> <colon> <number> <semi>
-						if (!CheckToken(&p_tmp, TOKEN_NUMBER, "", "number expected"))
+
+						// (1), (2), (3)
+
+						// <number>
+						if (!CheckToken(&p_tmp, TOKEN_NUMBER, "", E_SYNTAX_MISS_NUMBER))
 							return false;
 						data_bit.num_bits = to_number(p_tmp->value);
 						data.num_bits += data_bit.num_bits;
-						if (!CheckToken(&p_tmp, TOKEN_COLON, "", "character ':' expected"))
+						// <colon>
+						if (!CheckToken(&p_tmp, TOKEN_COLON, "", E_SYNTAX_MISS_COLON))
 							return false;
 
 						// (1), (2)
 						if (TestToken(TOKEN_SYMBOL, ""))
 						{
-							if (!CheckToken(&p_tmp, TOKEN_SYMBOL, "", "symbol expected"))
+							// <symbol>
+							if (!CheckToken(&p_tmp, TOKEN_SYMBOL, "", E_SYNTAX_MISS_SYMBOL))
 								return false;
-// TODO: test: exists
+							// test: exists
+							if (!data_inputs.count(p_tmp->value))
+								return PrintLineError(*p_tmp, E_SYNTAX_NO_INPUT);
 							data_bit.symbol = p_tmp->value;
+
 							// (1)
 							if (TestToken(TOKEN_SEMI, ""))
 							{
-								if (!CheckToken(&p_tmp, TOKEN_SEMI, "", "character ';' expected"))
+								// <semi>
+								if (!CheckToken(&p_tmp, TOKEN_SEMI, "", E_SYNTAX_MISS_SEMI))
 									return false;
 							}
 							// (2)
 							else
 							{
-								if (!CheckToken(&p_tmp, TOKEN_PAREN, "[", "opening brackets '[' expected"))
+								// <paren>
+								if (!CheckToken(&p_tmp, TOKEN_PAREN, "[", E_SYNTAX_MISS_LSBRAC))
 									return false;
-								if (!CheckToken(&p_tmp, TOKEN_NUMBER, "", "number expected"))
+								// <number>
+								if (!CheckToken(&p_tmp, TOKEN_NUMBER, "", E_SYNTAX_MISS_NUMBER))
 									return false;
-// TODO: test: value '1'
 								data_bit.sel_bit = to_number(p_tmp->value);
-								if (!CheckToken(&p_tmp, TOKEN_PAREN, "]", "closing brackets ']' expected"))
+								// <paren>
+								if (!CheckToken(&p_tmp, TOKEN_PAREN, "]", E_SYNTAX_MISS_RSBRAC))
 									return false;
-								if (!CheckToken(&p_tmp, TOKEN_SEMI, "", "character ';' expected"))
+								// <semi>
+								if (!CheckToken(&p_tmp, TOKEN_SEMI, "", E_SYNTAX_MISS_SEMI))
 									return false;
 							}
 						}
 						// (3)
 						else
 						{
-							if (!CheckToken(&p_tmp, TOKEN_NUMBER, "", "number expected"))
+							// <number>
+							if (!CheckToken(&p_tmp, TOKEN_NUMBER, "", E_SYNTAX_MISS_NUMBER))
 								return false;
 							data_bit.const_val = to_number(p_tmp->value);
-							if (!CheckToken(&p_tmp, TOKEN_SEMI, "", "character ';' expected"))
+							// <semi>
+							if (!CheckToken(&p_tmp, TOKEN_SEMI, "", E_SYNTAX_MISS_SEMI))
 								return false;
 						}
 
 						// store bits
 						data.v_bits.push_back(data_bit);
 					}
-
-					if (!CheckToken(&p_tmp, TOKEN_SEMI, "", "character ';' expected"))
+					// <semi>
+					if (!CheckToken(&p_tmp, TOKEN_SEMI, "", E_SYNTAX_MISS_SEMI))
 						return false;
 
 					// store data
@@ -204,28 +231,38 @@ namespace Parser {
 					// format(2):  <number> <colon> <symbol> <comma> <number> <semi>
 
 					// (1), (2)
-					if (!CheckToken(&p_tmp, TOKEN_NUMBER, "", "number expected"))
+
+					// <number>
+					if (!CheckToken(&p_tmp, TOKEN_NUMBER, "", E_SYNTAX_MISS_NUMBER))
 						return false;
 					data.num_bits = to_number(p_tmp->value);
-					if (!CheckToken(&p_tmp, TOKEN_COLON, "", "character ':' expected"))
+					// <colon>
+					if (!CheckToken(&p_tmp, TOKEN_COLON, "", E_SYNTAX_MISS_COLON))
 						return false;
-					if (!CheckToken(&p_tmp, TOKEN_SYMBOL, "", "symbol expected"))
+					// <symbol>
+					if (!CheckToken(&p_tmp, TOKEN_SYMBOL, "", E_SYNTAX_MISS_SYMBOL))
 						return false;
-// TODO: test: double def (except '_UNUSED')
+					// test: double-def (except '_UNUSED')
+					if ((p_tmp->value.compare("_UNUSED") != 0) and data_outputs.count(p_tmp->value))
+						return PrintLineError(*p_tmp, E_SYNTAX_DOUBLE_SYMBOL);
 					key = p_tmp->value;
 
 					// (2)
 					if (!TestToken(TOKEN_SEMI, ""))
 					{
-						if (!CheckToken(&p_tmp, TOKEN_COMMA, "", "character ',' expected"))
+						// <comma>
+						if (!CheckToken(&p_tmp, TOKEN_COMMA, "", E_SYNTAX_MISS_COMMA))
 							return false;
-						if (!CheckToken(&p_tmp, TOKEN_NUMBER, "", "number expected"))
+						// <number>
+						if (!CheckToken(&p_tmp, TOKEN_NUMBER, "", E_SYNTAX_MISS_NUMBER))
 							return false;
 						data.def_val = to_number(p_tmp->value);
 					}
 
 					// (1), (2)
-					if (!CheckToken(&p_tmp, TOKEN_SEMI, "", "character ';' expected"))
+
+					// <semi>
+					if (!CheckToken(&p_tmp, TOKEN_SEMI, "", E_SYNTAX_MISS_SEMI))
 						return false;
 
 					// store data
@@ -251,19 +288,23 @@ namespace Parser {
 					short value;
 
 					// format:  <symbol> <colon> <number> <semi>
-					if (!CheckToken(&p_tmp, TOKEN_SYMBOL, "", "symbol expected"))
+					if (!CheckToken(&p_tmp, TOKEN_SYMBOL, "", E_SYNTAX_MISS_SYMBOL))
 						return false;
-// TODO: test: def in inputs
-// TODO: test: def in signals
-// TODO: test: def in outputs
-// TODO: test: double def
+					// test: double-def
+					if (data_inputs.count(p_tmp->value)
+						or data_signals.count(p_tmp->value)
+						or data_outputs.count(p_tmp->value))
+						return PrintLineError(*p_tmp, E_SYNTAX_DOUBLE_SYMBOL);
 					key = p_tmp->value;
-					if (!CheckToken(&p_tmp, TOKEN_COLON, "", "character ':' expected"))
+					// <colon>
+					if (!CheckToken(&p_tmp, TOKEN_COLON, "", E_SYNTAX_MISS_COLON))
 						return false;
-					if (!CheckToken(&p_tmp, TOKEN_NUMBER, "", "number expected"))
+					// <number>
+					if (!CheckToken(&p_tmp, TOKEN_NUMBER, "", E_SYNTAX_MISS_NUMBER))
 						return false;
 					value = to_number(p_tmp->value);
-					if (!CheckToken(&p_tmp, TOKEN_SEMI, "", "character ';' expected"))
+					// <semi>
+					if (!CheckToken(&p_tmp, TOKEN_SEMI, "", E_SYNTAX_MISS_SEMI))
 						return false;
 
 					// store data
@@ -277,7 +318,9 @@ namespace Parser {
 			else if (p_token->value.compare("RULE") == 0)
 			{
 				// format:  <paren'('> ... <paren')> <comma> <paren'('> ... <paren')>
-				if (!CheckToken(&p_tmp, TOKEN_PAREN, "(", "opening brackets '(' expected"))
+
+				// <paren>
+				if (!CheckToken(&p_tmp, TOKEN_PAREN, "(", E_SYNTAX_MISS_LRBRAC))
 					return false;
 
 				rule_data data;
@@ -291,29 +334,35 @@ namespace Parser {
 					// format(2):  <symbol> <equal> <symbol>
 
 					// (1), (2)
-					if (!CheckToken(&p_tmp, TOKEN_SYMBOL, "", "symbol expected"))
+
+					// <symbol>
+					if (!CheckToken(&p_tmp, TOKEN_SYMBOL, "", E_SYNTAX_MISS_SYMBOL))
 						return false;
-// TODO: test: exists
+					// test: exists
+					if (!data_inputs.count(p_tmp->value))
+						return PrintLineError(*p_tmp, E_SYNTAX_NO_INPUT);
 					filter.symbol = p_tmp->value;
-					if (!CheckToken(&p_tmp, TOKEN_EQUAL, "", "character '=' expected"))
+					// <equal>
+					if (!CheckToken(&p_tmp, TOKEN_EQUAL, "", E_SYNTAX_MISS_EQUAL))
 						return false;
 
 					// (1)
 					if (TestToken(TOKEN_NUMBER, ""))
 					{
-						if (!CheckToken(&p_tmp, TOKEN_NUMBER, "", "number expected"))
+						// <number>
+						if (!CheckToken(&p_tmp, TOKEN_NUMBER, "", E_SYNTAX_MISS_NUMBER))
 							return false;
 						filter.value = to_number(p_tmp->value);
 					}
 					// (2)
 					else
 					{
-						if (!CheckToken(&p_tmp, TOKEN_SYMBOL, "", "symbol expected"))
+						// <symbol>
+						if (!CheckToken(&p_tmp, TOKEN_SYMBOL, "", E_SYNTAX_MISS_SYMBOL))
 							return false;
-
-						// lookup constant
+						// test: exists
 						if (!data_constants.contains(p_tmp->value))
-							return PrintLineError(*p_tmp, "constant not defined");
+							return PrintLineError(*p_tmp, E_SYNTAX_NO_CONSTANT);
 						filter.value = data_constants[p_tmp->value];
 					}
 
@@ -326,11 +375,14 @@ namespace Parser {
 					TokenConsume();
 				}
 
-				if (!CheckToken(&p_tmp, TOKEN_PAREN, ")", "closing brackets ')' expected"))
+				// <paren>
+				if (!CheckToken(&p_tmp, TOKEN_PAREN, ")", E_SYNTAX_MISS_RRBRAC))
 					return false;
-				if (!CheckToken(&p_tmp, TOKEN_COMMA, "", "character ',' expected"))
+				// <comma>
+				if (!CheckToken(&p_tmp, TOKEN_COMMA, "", E_SYNTAX_MISS_COMMA))
 					return false;
-				if (!CheckToken(&p_tmp, TOKEN_PAREN, "(", "opening brackets '(' expected"))
+				// <paren>
+				if (!CheckToken(&p_tmp, TOKEN_PAREN, "(", E_SYNTAX_MISS_LRBRAC))
 					return false;
 
 				// output setting
@@ -344,33 +396,39 @@ namespace Parser {
 					// format(3):  <symbol>
 
 					// (1), (2), (3)
-					if (!CheckToken(&p_tmp, TOKEN_SYMBOL, "", "symbol expected"))
+
+					// <symbol>
+					if (!CheckToken(&p_tmp, TOKEN_SYMBOL, "", E_SYNTAX_MISS_SYMBOL))
 						return false;
-// TODO: test: exists
+					// test: exists
+					if (!data_outputs.count(p_tmp->value))
+						return PrintLineError(*p_tmp, E_SYNTAX_NO_OPTPUT);
 					setting.symbol = p_tmp->value;
 
 					// (1), (2)
 					if (TestToken(TOKEN_EQUAL, ""))
 					{
-						if (!CheckToken(&p_tmp, TOKEN_EQUAL, "", "character '=' expected"))
+						// <equal>
+						if (!CheckToken(&p_tmp, TOKEN_EQUAL, "", E_SYNTAX_MISS_EQUAL))
 							return false;
 
 						// (1)
 						if (TestToken(TOKEN_NUMBER, ""))
 						{
-							if (!CheckToken(&p_tmp, TOKEN_NUMBER, "", "number expected"))
+							// <number>
+							if (!CheckToken(&p_tmp, TOKEN_NUMBER, "", E_SYNTAX_MISS_NUMBER))
 								return false;
 							setting.value = to_number(p_tmp->value);
 						}
 						// (2)
 						else
 						{
-							if (!CheckToken(&p_tmp, TOKEN_SYMBOL, "", "symbol expected"))
+							// <symbol>
+							if (!CheckToken(&p_tmp, TOKEN_SYMBOL, "", E_SYNTAX_MISS_SYMBOL))
 								return false;
-
-							// lookup constant
+							// test: exists
 							if (!data_constants.contains(p_tmp->value))
-								return PrintLineError(*p_tmp, "constant not defined");
+								return PrintLineError(*p_tmp, E_SYNTAX_NO_CONSTANT);
 							setting.value = data_constants[p_tmp->value];
 						}
 					}
@@ -388,16 +446,18 @@ namespace Parser {
 					TokenConsume();
 				}
 
-				if (!CheckToken(&p_tmp, TOKEN_PAREN, ")", "closing brackets ')' expected"))
+				// <paren>
+				if (!CheckToken(&p_tmp, TOKEN_PAREN, ")", E_SYNTAX_MISS_RRBRAC))
 					return false;
-				if (!CheckToken(&p_tmp, TOKEN_PAREN, "}", "closing brackets '}' expected"))
+				// <paren>
+				if (!CheckToken(&p_tmp, TOKEN_PAREN, "}", E_SYNTAX_MISS_RCBRAC))
 					return false;
 
 				// store data
 				data_rules.push_back(data);
 			}
 			else
-				return PrintLineError(*p_token, "unsupported section type");
+				return PrintLineError(*p_token, E_SYNTAX_SECTION_UNKNOWN);
 		}
 
 		return true;
