@@ -30,7 +30,7 @@ namespace Parser {
 		// open requested file
 		m_file.open(corrfilename, std::ifstream::in);
 		if (!m_file.is_open())
-			return PrintErrorMsg(E_FILE_CANT_OPEN);
+			return PrintFileError(corrfilename, E_FILE_CANT_OPEN);
 
 		// store file data
 		data_sourcefiles sf;

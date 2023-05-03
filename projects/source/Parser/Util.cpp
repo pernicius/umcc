@@ -18,6 +18,17 @@ namespace Parser {
 	}
 
 
+	bool PrintFileError(const std::string& file, const std::string& msg)
+	{
+		// [ERROR] file: msg
+		std::cout << clr::red << "[ERROR] " << clr::reset
+			<< file << ": "
+			<< clr::red << msg << clr::reset << std::endl;
+
+		return false;
+	}
+
+
 	void PrintLine(token_data& token, std::string msg)
 	{
 		// file:line: msg
