@@ -52,6 +52,7 @@
 		1: funct3[0];
 		3: funct3[1];           // all 3 bits will have the same value
 		1: funct3[2];
+		3: funct3;
 		2: 0x3;
 		2: 0b11;
 		2: 3;

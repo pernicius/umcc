@@ -120,6 +120,8 @@ namespace Parser {
 					if (!CheckToken(&p_tmp, TOKEN_PAREN, "(", E_SYNTAX_MISS_LRBRAC))
 						return false;
 
+					short start_bit = 0;
+
 					// bit definition
 					while (1)
 					{
@@ -131,6 +133,7 @@ namespace Parser {
 						}
 
 						signal_bit data_bit;
+						data_bit.start_bit = start_bit;
 						data_bit.sel_bit = -1;
 						data_bit.const_val = -1;
 
@@ -145,6 +148,7 @@ namespace Parser {
 							return false;
 						data_bit.num_bits = to_number(p_tmp->value);
 						data.num_bits += data_bit.num_bits;
+						start_bit += data_bit.num_bits;
 						// <colon>
 						if (!CheckToken(&p_tmp, TOKEN_COLON, "", E_SYNTAX_MISS_COLON))
 							return false;
@@ -214,6 +218,8 @@ namespace Parser {
 			// ===================
 			else if (p_token->value.compare("OUTPUTS") == 0)
 			{
+				short start_bit = 0;
+
 				while (1)
 				{
 					// end-of-section ?
@@ -226,6 +232,7 @@ namespace Parser {
 					std::string key;
 					output_data data;
 					data.def_val = 0;
+					data.start_bit = start_bit;
 
 					// format(1):  <number> <colon> <symbol> <semi>
 					// format(2):  <number> <colon> <symbol> <comma> <number> <semi>
@@ -236,6 +243,7 @@ namespace Parser {
 					if (!CheckToken(&p_tmp, TOKEN_NUMBER, "", E_SYNTAX_MISS_NUMBER))
 						return false;
 					data.num_bits = to_number(p_tmp->value);
+					start_bit += data.num_bits;
 					// <colon>
 					if (!CheckToken(&p_tmp, TOKEN_COLON, "", E_SYNTAX_MISS_COLON))
 						return false;
@@ -339,7 +347,7 @@ namespace Parser {
 					if (!CheckToken(&p_tmp, TOKEN_SYMBOL, "", E_SYNTAX_MISS_SYMBOL))
 						return false;
 					// test: exists
-					if (!data_inputs.count(p_tmp->value))
+					if (!data_inputs.count(p_tmp->value) and !data_signals.count(p_tmp->value))
 						return PrintLineError(*p_tmp, E_SYNTAX_NO_INPUT);
 					filter.symbol = p_tmp->value;
 					// <equal>
