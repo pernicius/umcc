@@ -2,7 +2,14 @@
 
 #include "Evaluator.h"
 
+#include <cmath>
+#include <fstream>
+#include <filesystem>
+
+#include "opts.h"
 #include "data_parsed.h"
+#include "Util.h"
+#include "errors.h"
 
 namespace Parser {
 
@@ -87,14 +94,63 @@ namespace Parser {
 					for (auto s : r.settings)
 					{
 						m_pgen[m_curr_input] = m_pgen[m_curr_input] & ~data_outputs[s.symbol].mask;
-						m_pgen[m_curr_input] += s.value << data_outputs[s.symbol].start_bit;
+						m_pgen[m_curr_input] |= (s.value << data_outputs[s.symbol].start_bit) & data_outputs[s.symbol].mask;
 					}
 				}
 			}
 		}
-// TODO...
-// TODO... generate target files
-// TODO...
+
+		// get output bits/bytes
+		short num_bits = 0;
+		for (auto o : data_outputs)
+			num_bits += o.second.num_bits;
+		short num_bytes = (short)std::ceil((float)num_bits / 8);
+
+		// try to open/create output file(s)
+		std::string corrfilename = std::filesystem::path(config::outfile).remove_filename().generic_string()
+			+ std::filesystem::path(config::outfile).filename().replace_extension("").generic_string();
+		std::ofstream files[4];
+		bool err = false;
+		for (short x = 0; x < num_bytes; x++)
+		{
+			std::string fname = corrfilename;
+			if (num_bytes > 1)
+				fname += std::to_string(x);
+			fname += std::filesystem::path(config::outfile).filename().extension().generic_string();
+			files[x].open(fname, std::ofstream::out | std::ofstream::binary | std::ofstream::trunc);
+			if (!files[x].is_open())
+			{
+				err = true;
+				PrintFileError(fname, E_FILE_CANT_OPEN);
+			}
+		}
+
+		// xyz
+		if (!err)
+		{
+			for (m_curr_input = 0; m_curr_input < max_input; m_curr_input++)
+			{
+				// binary
+				if (config::format.compare("bin") == 0)
+				{
+					for (short x = 0; x < num_bytes; x++)
+					{
+						char val = (m_pgen[m_curr_input] >> (x * 8)) & 0b11111111;
+						files[x] << val;
+					}
+				}
+
+				// intel hex
+				// TODO...
+				// TODO...
+				// TODO...
+
+				// logisim hex
+				// TODO...
+				// TODO...
+				// TODO...
+			}
+		}
 
 		// free used mem
 		if (m_pgen)

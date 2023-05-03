@@ -15,7 +15,7 @@
 	1: rs1_nonzero;
 	1: rs2b0;
 	1: rs2b1_4_nonzero;
-	2: _UNUSED;
+//	2: _UNUSED;
 }
 
 
