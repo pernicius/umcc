@@ -2,6 +2,8 @@
 
 #include "opts.h"
 
+#include <filesystem>
+
 #include "cxxopts.hpp"
 #include "colored_cout.h"
 
@@ -9,7 +11,8 @@
 // global configuration
 namespace config {
 	std::string infile;
-	std::string outfile = "rom";
+	std::string outfile = "rom.bin";
+	std::string format = "bin";
 	bool debug = false;
 	bool silent = false;
 }
@@ -28,12 +31,12 @@ bool parseopts(int argc, const char* argv[])
 		("s,silent",  "Don't print any informational messages.")
 //		("size",      "Size of the generated binary rom file in kilobytes.", cxxopts::value<int>())
 		("v,version", "Display version information.")
+		("g,generate", "Format of outfile. Can be \"bin\" (default), \"hex\", or \"logisim\"")
 		;
 	options.custom_help("[options]");
 	options.add_options("files")
 		("infile",  "", cxxopts::value<std::string>())
-		("outfile", "", cxxopts::value<std::string>()
-			->default_value("rom.hex"))
+		("outfile", "", cxxopts::value<std::string>())
 		;
 	options.positional_help("infile [outfile]");
 	options.parse_positional({ "infile", "outfile" });
@@ -58,9 +61,18 @@ bool parseopts(int argc, const char* argv[])
 	if (result.count("outfile"))
 		config::outfile = result["outfile"].as<std::string>();
 
+	// [optional] format
+	if (result.count("generate"))
+	{
+		config::format = result["generate"].as<std::string>();
+		if ((config::format.compare("bin") != 0) and
+			(config::format.compare("hex") != 0) and
+			(config::format.compare("logisim") != 0))
+			show_help = true;
+	}
+
 #ifdef _DEBUG
-	// only during development!!!
-	
+	// ONLY DURING DEVELOPMENT!!!
 	// overwrite cmd options...
 	show_help = false;
 	config::debug = true;
@@ -68,13 +80,27 @@ bool parseopts(int argc, const char* argv[])
 		config::infile = "../ucode_test/main.ucode";
 #endif
 
+
+	// check format with outfile extension
+	if (result.count("generate") == 0)
+	{
+		if (std::filesystem::path(config::outfile).extension().compare(".bin") == 0)
+			config::format = "bin";
+		else if (std::filesystem::path(config::outfile).extension().compare(".hex") == 0)
+			config::format = "hex";
+		else
+			show_help = true;
+	}
+
 	// debug output: config
 	if (config::debug)
 	{
 		for (const auto& option : result.unmatched())
 			std::cout << "Unknown option: '" << option << "' " << std::endl;
 		std::cout << "config:" << std::endl;
+		std::cout << "  debug mode: " << (config::debug ? "yes" : "no") << std::endl;
 		std::cout << "  silent mode: " << (config::silent ? "yes" : "no") << std::endl;
+		std::cout << "  format: " << config::format << std::endl;
 		std::cout << "  infile:  " << config::infile << std::endl;
 		std::cout << "  outfile: " << config::outfile << std::endl;
 	}
